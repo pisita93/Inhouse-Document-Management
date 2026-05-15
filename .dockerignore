@@ -1,0 +1,12 @@
+node_modules
+server/dist
+client/dist
+coverage
+.git
+.github
+.superpowers
+.claude
+docs
+e2e
+*.tsbuildinfo
+.env*

@@ -38,3 +38,12 @@ coverage/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Build artifacts
+server/dist/
+client/dist/
+*.tsbuildinfo
+
+# Playwright
+test-results/
+playwright-report/
