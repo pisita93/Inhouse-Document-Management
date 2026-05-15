@@ -9,7 +9,7 @@
     "build:server": "tsc -p tsconfig.server.json",
     "build:client": "vite build",
     "build": "npm run build:client && npm run build:server",
-    "start": "node server/dist/index.js",
+    "start": "node server/dist/server/src/index.js",
     "lint": "eslint . --ext .ts,.tsx",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
