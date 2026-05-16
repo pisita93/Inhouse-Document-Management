@@ -19,7 +19,11 @@ const PDF_MIN = Buffer.from(
     'trailer\n<</Root 1 0 R>>\nstartxref\n47\n%%EOF',
 );
 
-export function makeTestEnv() {
+export interface MakeTestEnvOptions {
+  testResetEnabled?: boolean;
+}
+
+export function makeTestEnv(opts: MakeTestEnvOptions = {}) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'receipts-it-'));
   fs.mkdirSync(path.join(tmp, 'db'), { recursive: true });
   fs.mkdirSync(path.join(tmp, 'file'), { recursive: true });
@@ -27,7 +31,7 @@ export function makeTestEnv() {
   runMigrations(db);
   const repo = createReceiptsRepo(db);
   const store = createFileStore(path.join(tmp, 'file'));
-  const app: Express = buildApp({ repo, store });
+  const app: Express = buildApp({ repo, store, testResetEnabled: opts.testResetEnabled });
   return {
     tmp,
     db,

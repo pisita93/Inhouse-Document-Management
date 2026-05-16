@@ -130,4 +130,14 @@ describe('receiptsRepo', () => {
   it('delete returns false for unknown id', () => {
     expect(repo.delete('99999999-9999-4999-8999-999999999999')).toBe(false);
   });
+
+  it('reset removes every row and clears the FTS index', () => {
+    repo.insert(sample);
+    repo.insert({ ...sample, id: '22222222-2222-4222-8222-222222222222' });
+
+    repo.reset();
+
+    expect(repo.list({ page: 1, pageSize: 20 }).total).toBe(0);
+    expect(repo.list({ q: 'AWS', page: 1, pageSize: 20 }).total).toBe(0);
+  });
 });

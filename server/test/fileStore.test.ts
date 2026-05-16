@@ -69,4 +69,18 @@ describe('fileStore', () => {
       store.unlink('44444444-4444-4444-8444-444444444444', 'pdf', '2026-04-01'),
     ).resolves.toBeUndefined();
   });
+
+  it('reset wipes the root and recreates it for subsequent writes', async () => {
+    const id = '55555555-5555-4555-8555-555555555555';
+    await store.write(id, 'pdf', '2026-05-01', Buffer.from('before'));
+    expect(store.exists(id, 'pdf', '2026-05-01')).toBe(true);
+
+    await store.reset();
+
+    expect(store.exists(id, 'pdf', '2026-05-01')).toBe(false);
+    expect(fs.existsSync(root)).toBe(true);
+
+    await store.write(id, 'pdf', '2026-05-01', Buffer.from('after'));
+    expect(store.exists(id, 'pdf', '2026-05-01')).toBe(true);
+  });
 });
