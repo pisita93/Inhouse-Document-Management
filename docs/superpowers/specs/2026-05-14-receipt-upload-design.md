@@ -69,9 +69,9 @@ A LAN-only web application for a small office to upload receipts, invoices, and 
 
 Bind-mount root inside the container is `/data`:
 
-| Path | Contents |
-|---|---|
-| `/data/db/receipts.db` | SQLite database (with `-wal` and `-shm` siblings) |
+| Path                                  | Contents                                            |
+| ------------------------------------- | --------------------------------------------------- |
+| `/data/db/receipts.db`                | SQLite database (with `-wal` and `-shm` siblings)   |
 | `/data/file/{YYYY}/{MM}/{uuid}.{ext}` | Uploaded receipt files, partitioned by invoice date |
 
 One folder, one snapshot unit, one thing to back up.
@@ -99,7 +99,7 @@ services:
     container_name: receipts
     restart: unless-stopped
     ports:
-      - "5900:5900"
+      - '5900:5900'
     volumes:
       - /volume1/docker/Document-Management:/data
     environment:
@@ -163,14 +163,14 @@ ListQuery     = { type?, dateFrom?, dateTo?, q?, page?, pageSize? }
 
 ## 5. API surface
 
-| Method | Path | Purpose | Request | Response |
-|---|---|---|---|---|
-| `POST` | `/api/receipts` | Upload | `multipart/form-data`: `file` + `metadata` (JSON) | `201` `ReceiptDTO` |
-| `GET` | `/api/receipts` | List + filter | query: `type`, `dateFrom`, `dateTo`, `q`, `page=1`, `pageSize=20` | `200` `{ items, total, page, pageSize }` |
-| `GET` | `/api/receipts/:id` | Metadata only | — | `200` `ReceiptDTO` / `404` |
-| `GET` | `/api/receipts/:id/file` | Download original | — | `200` binary stream with `Content-Disposition` / `404` / `410` |
-| `DELETE` | `/api/receipts/:id` | Remove DB row + file | — | `204` / `404` |
-| `GET` | `/api/health` | Container liveness probe | — | `200` `{ ok: true, version }` |
+| Method   | Path                     | Purpose                  | Request                                                           | Response                                                       |
+| -------- | ------------------------ | ------------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------- |
+| `POST`   | `/api/receipts`          | Upload                   | `multipart/form-data`: `file` + `metadata` (JSON)                 | `201` `ReceiptDTO`                                             |
+| `GET`    | `/api/receipts`          | List + filter            | query: `type`, `dateFrom`, `dateTo`, `q`, `page=1`, `pageSize=20` | `200` `{ items, total, page, pageSize }`                       |
+| `GET`    | `/api/receipts/:id`      | Metadata only            | —                                                                 | `200` `ReceiptDTO` / `404`                                     |
+| `GET`    | `/api/receipts/:id/file` | Download original        | —                                                                 | `200` binary stream with `Content-Disposition` / `404` / `410` |
+| `DELETE` | `/api/receipts/:id`      | Remove DB row + file     | —                                                                 | `204` / `404`                                                  |
+| `GET`    | `/api/health`            | Container liveness probe | —                                                                 | `200` `{ ok: true, version }`                                  |
 
 **Search semantics (`q`):** SQLite FTS5 virtual table indexes `document_name` + `note`. Tokenized, prefix-match, case-insensitive, ranked by BM25. Combined with `type` / `dateFrom` / `dateTo` filters using AND.
 
@@ -251,21 +251,21 @@ END;
 
 ### 8.1 Failure modes
 
-| Failure | When | Response | Recovery |
-|---|---|---|---|
-| Missing/invalid metadata | Zod parse fails | `400 VALIDATION` with `fields` map | Client highlights the field |
-| File too large | multer `limits.fileSize` exceeded | `413 FILE_TOO_LARGE` (limit: 25 MB) | Client tells user |
-| Wrong file type | `file-type` byte-sniff fails | `415 UNSUPPORTED_MEDIA_TYPE` | Client shows allowed types |
-| Mime spoofing | Sniff differs from claimed header | Same as above — sniff is authoritative | — |
-| Disk full | `fileStore.write()` rejects | `507 STORAGE_FULL`, no DB row written | Operator clears NAS space |
-| DB constraint violation | Should be caught by Zod first | `400 VALIDATION` (defense-in-depth) | Bug — log and fix |
-| DB busy / locked | Rare with WAL, possible | `503 DB_BUSY` + `retryAfter:1`, file unlinked | Client retries once transparently; only shows toast if the retry also fails |
-| File OK, DB insert fails | Upload step 6 | File unlinked in catch, return `500 INTERNAL` | Atomicity preserved |
-| Receipt not found | `GET /:id`, download, delete | `404 NOT_FOUND` | Client shows message |
-| DB row exists, file missing | Download stream `ENOENT` | `410 FILE_GONE` | Operator alerted via logs |
-| NAS mount disappears | `/data` becomes unreadable at runtime | `503 STORAGE_UNAVAILABLE` from health probe + write attempts | Portainer restart policy |
-| Boot: `/data` not writable | `index.ts` startup check | Process exits non-zero, container restarts | Operator fixes bind-mount |
-| Boot: migrations fail | `migrations.ts` throws | Process exits non-zero | Operator inspects logs |
+| Failure                     | When                                  | Response                                                     | Recovery                                                                    |
+| --------------------------- | ------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Missing/invalid metadata    | Zod parse fails                       | `400 VALIDATION` with `fields` map                           | Client highlights the field                                                 |
+| File too large              | multer `limits.fileSize` exceeded     | `413 FILE_TOO_LARGE` (limit: 25 MB)                          | Client tells user                                                           |
+| Wrong file type             | `file-type` byte-sniff fails          | `415 UNSUPPORTED_MEDIA_TYPE`                                 | Client shows allowed types                                                  |
+| Mime spoofing               | Sniff differs from claimed header     | Same as above — sniff is authoritative                       | —                                                                           |
+| Disk full                   | `fileStore.write()` rejects           | `507 STORAGE_FULL`, no DB row written                        | Operator clears NAS space                                                   |
+| DB constraint violation     | Should be caught by Zod first         | `400 VALIDATION` (defense-in-depth)                          | Bug — log and fix                                                           |
+| DB busy / locked            | Rare with WAL, possible               | `503 DB_BUSY` + `retryAfter:1`, file unlinked                | Client retries once transparently; only shows toast if the retry also fails |
+| File OK, DB insert fails    | Upload step 6                         | File unlinked in catch, return `500 INTERNAL`                | Atomicity preserved                                                         |
+| Receipt not found           | `GET /:id`, download, delete          | `404 NOT_FOUND`                                              | Client shows message                                                        |
+| DB row exists, file missing | Download stream `ENOENT`              | `410 FILE_GONE`                                              | Operator alerted via logs                                                   |
+| NAS mount disappears        | `/data` becomes unreadable at runtime | `503 STORAGE_UNAVAILABLE` from health probe + write attempts | Portainer restart policy                                                    |
+| Boot: `/data` not writable  | `index.ts` startup check              | Process exits non-zero, container restarts                   | Operator fixes bind-mount                                                   |
+| Boot: migrations fail       | `migrations.ts` throws                | Process exits non-zero                                       | Operator inspects logs                                                      |
 
 ### 8.2 Error envelope
 
@@ -309,6 +309,7 @@ END;
 ### 9.2 Layers
 
 **Unit:**
+
 - `shared/schemas.test.ts` — every valid shape parses, every invalid shape produces the expected field error.
 - `server/storage/fileStore.test.ts` — path derivation from uuid + ext + date.
 - `server/db/queryBuilder.test.ts` — filter composition, FTS join, pagination math.
@@ -316,6 +317,7 @@ END;
 - Money formatting helpers — minor-unit ↔ display.
 
 **Integration (real SQLite + real tmpdir; no mocks):**
+
 - `POST /api/receipts` — happy path (file at right path, row inserted, FTS searchable), each rejection (bad mime, too large, bad metadata, byte-sniff mismatch).
 - `GET /api/receipts` — filter by type, by date range, by `q`, all three combined; pagination math; empty result.
 - `GET /api/receipts/:id` and `/file` — 200 happy, 404 missing, 410 when row exists but file is gone.
@@ -325,6 +327,7 @@ END;
 Per the global testing rule: **no DB mocks, no filesystem mocks.** Tests run against real SQLite and real tmp directories.
 
 **E2E (Playwright):**
+
 - Golden path: open `/`, drop a PDF, fill the form, click Upload → appears in browse list → click to view detail → click Download → bytes match what was uploaded.
 - Search: upload three with distinct names → query → only matches appear.
 - Filter: type + date range → only matching rows.

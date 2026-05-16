@@ -5,7 +5,7 @@ services:
     container_name: receipts
     restart: unless-stopped
     ports:
-      - "5900:5900"
+      - '5900:5900'
     volumes:
       - /volume1/docker/Document-Management:/data
     environment:

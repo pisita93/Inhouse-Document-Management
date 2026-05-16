@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  RECEIPT_TYPES,
-  CURRENCIES,
-  ReceiptCreateSchema,
-  ListQuerySchema,
-} from './schemas.js';
+import { RECEIPT_TYPES, CURRENCIES, ReceiptCreateSchema, ListQuerySchema } from './schemas.js';
 
 describe('ReceiptCreateSchema', () => {
   const valid = {

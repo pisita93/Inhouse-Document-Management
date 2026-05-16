@@ -11,7 +11,10 @@ const meta = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-async function uploadOne(env: ReturnType<typeof makeTestEnv>, overrides: Record<string, unknown> = {}) {
+async function uploadOne(
+  env: ReturnType<typeof makeTestEnv>,
+  overrides: Record<string, unknown> = {},
+) {
   return request(env.app)
     .post('/api/receipts')
     .field('metadata', JSON.stringify(meta(overrides)))

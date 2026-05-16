@@ -22,14 +22,19 @@ async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
 
   let res = await doFetch();
   if (res.status === 503) {
-    const body = await res.clone().json().catch(() => null);
+    const body = await res
+      .clone()
+      .json()
+      .catch(() => null);
     if (body?.error?.code === 'DB_BUSY') {
       await new Promise((r) => setTimeout(r, 250));
       res = await doFetch();
     }
   }
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: { code: 'INTERNAL', message: res.statusText } }));
+    const body = await res
+      .json()
+      .catch(() => ({ error: { code: 'INTERNAL', message: res.statusText } }));
     throw new ApiClientError(
       body.error?.code ?? 'INTERNAL',
       body.error?.message ?? 'Request failed',

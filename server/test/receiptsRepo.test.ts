@@ -49,8 +49,16 @@ describe('receiptsRepo', () => {
   });
 
   it('list returns most-recent first', () => {
-    repo.insert({ ...sample, id: 'a'.repeat(8) + '-1111-4111-8111-111111111111', invoiceDate: '2026-01-01' });
-    repo.insert({ ...sample, id: 'b'.repeat(8) + '-1111-4111-8111-111111111111', invoiceDate: '2026-03-01' });
+    repo.insert({
+      ...sample,
+      id: 'a'.repeat(8) + '-1111-4111-8111-111111111111',
+      invoiceDate: '2026-01-01',
+    });
+    repo.insert({
+      ...sample,
+      id: 'b'.repeat(8) + '-1111-4111-8111-111111111111',
+      invoiceDate: '2026-03-01',
+    });
     const { items, total } = repo.list({ page: 1, pageSize: 20 });
     expect(total).toBe(2);
     expect(items[0]?.invoiceDate).toBe('2026-03-01');
@@ -64,15 +72,36 @@ describe('receiptsRepo', () => {
   });
 
   it('list filters by date range', () => {
-    repo.insert({ ...sample, id: 'e'.repeat(8) + '-1111-4111-8111-111111111111', invoiceDate: '2026-01-01' });
-    repo.insert({ ...sample, id: 'f'.repeat(8) + '-1111-4111-8111-111111111111', invoiceDate: '2026-06-01' });
-    const { total } = repo.list({ dateFrom: '2026-03-01', dateTo: '2026-12-31', page: 1, pageSize: 20 });
+    repo.insert({
+      ...sample,
+      id: 'e'.repeat(8) + '-1111-4111-8111-111111111111',
+      invoiceDate: '2026-01-01',
+    });
+    repo.insert({
+      ...sample,
+      id: 'f'.repeat(8) + '-1111-4111-8111-111111111111',
+      invoiceDate: '2026-06-01',
+    });
+    const { total } = repo.list({
+      dateFrom: '2026-03-01',
+      dateTo: '2026-12-31',
+      page: 1,
+      pageSize: 20,
+    });
     expect(total).toBe(1);
   });
 
   it('list searches FTS by q', () => {
-    repo.insert({ ...sample, id: 'a1'.padEnd(8, '0') + '-1111-4111-8111-111111111111', documentName: 'AWS January' });
-    repo.insert({ ...sample, id: 'a2'.padEnd(8, '0') + '-1111-4111-8111-111111111111', documentName: 'GitHub bill' });
+    repo.insert({
+      ...sample,
+      id: 'a1'.padEnd(8, '0') + '-1111-4111-8111-111111111111',
+      documentName: 'AWS January',
+    });
+    repo.insert({
+      ...sample,
+      id: 'a2'.padEnd(8, '0') + '-1111-4111-8111-111111111111',
+      documentName: 'GitHub bill',
+    });
     const { items, total } = repo.list({ q: 'AWS', page: 1, pageSize: 20 });
     expect(total).toBe(1);
     expect(items[0]?.documentName).toBe('AWS January');
@@ -80,7 +109,10 @@ describe('receiptsRepo', () => {
 
   it('list paginates', () => {
     for (let i = 0; i < 25; i++) {
-      repo.insert({ ...sample, id: i.toString().padStart(8, '0') + '-1111-4111-8111-111111111111' });
+      repo.insert({
+        ...sample,
+        id: i.toString().padStart(8, '0') + '-1111-4111-8111-111111111111',
+      });
     }
     const { items, total } = repo.list({ page: 2, pageSize: 10 });
     expect(total).toBe(25);

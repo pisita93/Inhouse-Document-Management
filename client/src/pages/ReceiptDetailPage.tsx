@@ -34,23 +34,44 @@ export function ReceiptDetailPage() {
   }
 
   if (loading) return <p style={{ padding: 16 }}>Loading…</p>;
-  if (error) return <p style={{ padding: 16, color: '#c00' }}>{error} (<Link to="/browse">back</Link>)</p>;
+  if (error)
+    return (
+      <p style={{ padding: 16, color: '#c00' }}>
+        {error} (<Link to="/browse">back</Link>)
+      </p>
+    );
   if (!dto) return null;
 
   return (
     <div style={{ padding: 16, maxWidth: 720 }}>
       <h2>{dto.documentName}</h2>
       <dl>
-        <dt>Type</dt><dd>{dto.type}</dd>
-        <dt>Invoice date</dt><dd>{dto.invoiceDate}</dd>
-        <dt>Amount</dt><dd>{(dto.amount / 100).toFixed(2)} {dto.currency}</dd>
-        {dto.note && (<><dt>Note</dt><dd>{dto.note}</dd></>)}
-        <dt>Original file</dt><dd>{dto.originalName} ({Math.round(dto.sizeBytes / 1024)} KB)</dd>
-        <dt>Uploaded</dt><dd>{new Date(dto.createdAt).toLocaleString()}</dd>
+        <dt>Type</dt>
+        <dd>{dto.type}</dd>
+        <dt>Invoice date</dt>
+        <dd>{dto.invoiceDate}</dd>
+        <dt>Amount</dt>
+        <dd>
+          {(dto.amount / 100).toFixed(2)} {dto.currency}
+        </dd>
+        {dto.note && (
+          <>
+            <dt>Note</dt>
+            <dd>{dto.note}</dd>
+          </>
+        )}
+        <dt>Original file</dt>
+        <dd>
+          {dto.originalName} ({Math.round(dto.sizeBytes / 1024)} KB)
+        </dd>
+        <dt>Uploaded</dt>
+        <dd>{new Date(dto.createdAt).toLocaleString()}</dd>
       </dl>
       <div style={{ display: 'flex', gap: 12 }}>
         <a href={api.fileUrl(dto.id)}>Download original</a>
-        <button onClick={onDelete} style={{ color: '#c00' }}>Delete</button>
+        <button onClick={onDelete} style={{ color: '#c00' }}>
+          Delete
+        </button>
         <Link to="/browse">Back to list</Link>
       </div>
     </div>

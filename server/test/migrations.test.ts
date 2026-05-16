@@ -22,9 +22,9 @@ describe('runMigrations', () => {
   it('creates receipts table and FTS5 mirror', () => {
     const db = openDatabase(dbPath);
     runMigrations(db);
-    const tables = db.prepare(
-      "SELECT name FROM sqlite_master WHERE type IN ('table','virtual')",
-    ).all() as { name: string }[];
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type IN ('table','virtual')")
+      .all() as { name: string }[];
     const names = tables.map((t) => t.name);
     expect(names).toContain('receipts');
     expect(names).toContain('receipts_fts');

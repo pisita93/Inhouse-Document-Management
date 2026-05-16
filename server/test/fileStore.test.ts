@@ -24,13 +24,25 @@ describe('fileStore', () => {
   });
 
   it('writes bytes and creates the directory tree', async () => {
-    await store.write('11111111-1111-4111-8111-111111111111', 'png', '2026-01-10', Buffer.from('hi'));
-    const written = fs.readFileSync(path.join(root, '2026', '01', '11111111-1111-4111-8111-111111111111.png'));
+    await store.write(
+      '11111111-1111-4111-8111-111111111111',
+      'png',
+      '2026-01-10',
+      Buffer.from('hi'),
+    );
+    const written = fs.readFileSync(
+      path.join(root, '2026', '01', '11111111-1111-4111-8111-111111111111.png'),
+    );
     expect(written.toString()).toBe('hi');
   });
 
   it('openStream reads back what was written', async () => {
-    await store.write('22222222-2222-4222-8222-222222222222', 'jpg', '2026-02-01', Buffer.from('hello'));
+    await store.write(
+      '22222222-2222-4222-8222-222222222222',
+      'jpg',
+      '2026-02-01',
+      Buffer.from('hello'),
+    );
     const stream = store.openStream('22222222-2222-4222-8222-222222222222', 'jpg', '2026-02-01');
     const chunks: Buffer[] = [];
     for await (const chunk of stream as Readable) chunks.push(Buffer.from(chunk));
@@ -42,7 +54,12 @@ describe('fileStore', () => {
   });
 
   it('unlink removes the file', async () => {
-    await store.write('33333333-3333-4333-8333-333333333333', 'pdf', '2026-04-01', Buffer.from('x'));
+    await store.write(
+      '33333333-3333-4333-8333-333333333333',
+      'pdf',
+      '2026-04-01',
+      Buffer.from('x'),
+    );
     await store.unlink('33333333-3333-4333-8333-333333333333', 'pdf', '2026-04-01');
     expect(store.exists('33333333-3333-4333-8333-333333333333', 'pdf', '2026-04-01')).toBe(false);
   });

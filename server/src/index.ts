@@ -28,10 +28,7 @@ function main(): void {
   const repo = createReceiptsRepo(db);
   const store = createFileStore(cfg.fileRoot);
 
-  const staticDir = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '../../client/dist',
-  );
+  const staticDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
   const app = buildApp({
     repo,
     store,

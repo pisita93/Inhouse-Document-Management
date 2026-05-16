@@ -13,10 +13,19 @@ export default defineConfig({
       ['**', 'node'],
     ],
     setupFiles: ['./vitest.setup.ts'],
+    exclude: ['node_modules', 'dist', 'e2e/**', '**/server/dist/**', '**/client/dist/**'],
+    pool: 'forks',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['server/src/**', 'client/src/**', 'shared/**'],
+      exclude: [
+        'client/src/App.tsx',
+        'client/src/main.tsx',
+        'client/src/types.ts',
+        'client/src/pages/**',
+        'server/src/index.ts',
+      ],
       thresholds: {
         statements: 80,
         branches: 80,

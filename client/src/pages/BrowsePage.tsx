@@ -50,9 +50,21 @@ export function BrowsePage() {
       <aside>
         <h3>Filter</h3>
         <label>Search</label>
-        <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+        <input
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }}
+        />
         <label>Type</label>
-        <select value={type} onChange={(e) => { setType(e.target.value as ReceiptType | ''); setPage(1); }}>
+        <select
+          value={type}
+          onChange={(e) => {
+            setType(e.target.value as ReceiptType | '');
+            setPage(1);
+          }}
+        >
           <option value="">All</option>
           {RECEIPT_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -61,15 +73,33 @@ export function BrowsePage() {
           ))}
         </select>
         <label>From</label>
-        <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} />
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => {
+            setDateFrom(e.target.value);
+            setPage(1);
+          }}
+        />
         <label>To</label>
-        <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} />
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => {
+            setDateTo(e.target.value);
+            setPage(1);
+          }}
+        />
       </aside>
       <section>
         <h3>Receipts ({total})</h3>
         {loading && <p>Loading…</p>}
         {error && <p style={{ color: '#c00' }}>{error}</p>}
-        {!loading && items.length === 0 && <p>No receipts yet. <Link to="/">Upload one</Link>.</p>}
+        {!loading && items.length === 0 && (
+          <p>
+            No receipts yet. <Link to="/">Upload one</Link>.
+          </p>
+        )}
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -86,16 +116,26 @@ export function BrowsePage() {
                 <td>{r.documentName}</td>
                 <td>{r.type}</td>
                 <td>{r.invoiceDate}</td>
-                <td align="right">{(r.amount / 100).toFixed(2)} {r.currency}</td>
-                <td><Link to={`/receipts/${r.id}`}>View</Link></td>
+                <td align="right">
+                  {(r.amount / 100).toFixed(2)} {r.currency}
+                </td>
+                <td>
+                  <Link to={`/receipts/${r.id}`}>View</Link>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
-          <span>Page {page} / {lastPage}</span>
-          <button disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>Next</button>
+          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            Prev
+          </button>
+          <span>
+            Page {page} / {lastPage}
+          </span>
+          <button disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>
+            Next
+          </button>
         </div>
       </section>
     </div>

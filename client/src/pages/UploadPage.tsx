@@ -86,7 +86,10 @@ export function UploadPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label>Type</label>
-          <select value={form.type} onChange={(e) => update('type', e.target.value as typeof form.type)}>
+          <select
+            value={form.type}
+            onChange={(e) => update('type', e.target.value as typeof form.type)}
+          >
             {RECEIPT_TYPES.map((t) => (
               <option key={t} value={t}>
                 {t}

@@ -7,6 +7,7 @@
 **Architecture:** One Node 20 + Express process serving a built React SPA and a JSON API. SQLite (with FTS5) for metadata at `/data/db/receipts.db`; uploaded files at `/data/file/{YYYY}/{MM}/{uuid}.{ext}`. The container bind-mounts the Synology path `/volume1/docker/Document-Management` at `/data`. No auth, LAN-only.
 
 **Tech Stack:**
+
 - Server: Node 20, Express 4, TypeScript, better-sqlite3, multer, file-type, zod, pino
 - Client: React 18, Vite, TypeScript, react-router, zod
 - Test: Vitest, supertest, Playwright
@@ -97,6 +98,7 @@
 ### Task 1: Initialize package.json, TypeScript, tooling
 
 **Files:**
+
 - Create: `package.json`
 - Create: `tsconfig.base.json`
 - Create: `tsconfig.server.json`
@@ -104,7 +106,7 @@
 - Create: `.eslintrc.cjs`
 - Create: `.prettierrc.json`
 - Create: `.dockerignore`
-- Modify: `.gitignore` (append node_modules, dist, *.tsbuildinfo if not already)
+- Modify: `.gitignore` (append node_modules, dist, \*.tsbuildinfo if not already)
 
 - [ ] **Step 1: Create `package.json`**
 
@@ -313,6 +315,7 @@ git commit -m "chore: scaffold typescript, eslint, prettier, and npm scripts"
 ### Task 2: Configure Vitest with env-per-file split
 
 **Files:**
+
 - Create: `vitest.config.ts`
 - Create: `server/test/sample.test.ts` (deleted after verification)
 
@@ -388,6 +391,7 @@ git commit -m "chore: configure vitest with node + jsdom envs and 80% coverage g
 ### Task 3: Define shared Zod schemas
 
 **Files:**
+
 - Create: `shared/schemas.ts`
 - Test: `shared/schemas.test.ts`
 
@@ -397,12 +401,7 @@ git commit -m "chore: configure vitest with node + jsdom envs and 80% coverage g
 
 ```ts
 import { describe, it, expect } from 'vitest';
-import {
-  RECEIPT_TYPES,
-  CURRENCIES,
-  ReceiptCreateSchema,
-  ListQuerySchema,
-} from './schemas.js';
+import { RECEIPT_TYPES, CURRENCIES, ReceiptCreateSchema, ListQuerySchema } from './schemas.js';
 
 describe('ReceiptCreateSchema', () => {
   const valid = {
@@ -564,6 +563,7 @@ git commit -m "feat: add shared zod schemas for receipts, list query, and error 
 ### Task 4: Config module with Zod-validated env
 
 **Files:**
+
 - Create: `server/src/config.ts`
 - Test: `server/test/config.test.ts`
 
@@ -663,6 +663,7 @@ git commit -m "feat(server): add config loader with zod-validated env"
 ### Task 5: Logger module
 
 **Files:**
+
 - Create: `server/src/logger.ts`
 
 - [ ] **Step 1: Implement `server/src/logger.ts`**
@@ -700,6 +701,7 @@ git commit -m "feat(server): add pino logger (silent in tests)"
 ### Task 6: SQLite schema migration
 
 **Files:**
+
 - Create: `migrations/001_init.sql`
 
 - [ ] **Step 1: Write the migration**
@@ -755,6 +757,7 @@ git commit -m "feat(db): add initial schema with FTS5 mirror and triggers"
 ### Task 7: Connection + migrations runner
 
 **Files:**
+
 - Create: `server/src/db/connection.ts`
 - Create: `server/src/db/migrations.ts`
 - Test: `server/test/migrations.test.ts`
@@ -788,9 +791,9 @@ describe('runMigrations', () => {
   it('creates receipts table and FTS5 mirror', () => {
     const db = openDatabase(dbPath);
     runMigrations(db);
-    const tables = db.prepare(
-      "SELECT name FROM sqlite_master WHERE type IN ('table','virtual')",
-    ).all() as { name: string }[];
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type IN ('table','virtual')")
+      .all() as { name: string }[];
     const names = tables.map((t) => t.name);
     expect(names).toContain('receipts');
     expect(names).toContain('receipts_fts');
@@ -886,6 +889,7 @@ git commit -m "feat(db): add connection helper and migration runner"
 ### Task 8: Receipts repository
 
 **Files:**
+
 - Create: `server/src/db/receiptsRepo.ts`
 - Test: `server/test/receiptsRepo.test.ts`
 
@@ -945,8 +949,16 @@ describe('receiptsRepo', () => {
   });
 
   it('list returns most-recent first', () => {
-    repo.insert({ ...sample, id: 'a'.repeat(8) + '-1111-4111-8111-111111111111', invoiceDate: '2026-01-01' });
-    repo.insert({ ...sample, id: 'b'.repeat(8) + '-1111-4111-8111-111111111111', invoiceDate: '2026-03-01' });
+    repo.insert({
+      ...sample,
+      id: 'a'.repeat(8) + '-1111-4111-8111-111111111111',
+      invoiceDate: '2026-01-01',
+    });
+    repo.insert({
+      ...sample,
+      id: 'b'.repeat(8) + '-1111-4111-8111-111111111111',
+      invoiceDate: '2026-03-01',
+    });
     const { items, total } = repo.list({ page: 1, pageSize: 20 });
     expect(total).toBe(2);
     expect(items[0]?.invoiceDate).toBe('2026-03-01');
@@ -960,15 +972,36 @@ describe('receiptsRepo', () => {
   });
 
   it('list filters by date range', () => {
-    repo.insert({ ...sample, id: 'e'.repeat(8) + '-1111-4111-8111-111111111111', invoiceDate: '2026-01-01' });
-    repo.insert({ ...sample, id: 'f'.repeat(8) + '-1111-4111-8111-111111111111', invoiceDate: '2026-06-01' });
-    const { total } = repo.list({ dateFrom: '2026-03-01', dateTo: '2026-12-31', page: 1, pageSize: 20 });
+    repo.insert({
+      ...sample,
+      id: 'e'.repeat(8) + '-1111-4111-8111-111111111111',
+      invoiceDate: '2026-01-01',
+    });
+    repo.insert({
+      ...sample,
+      id: 'f'.repeat(8) + '-1111-4111-8111-111111111111',
+      invoiceDate: '2026-06-01',
+    });
+    const { total } = repo.list({
+      dateFrom: '2026-03-01',
+      dateTo: '2026-12-31',
+      page: 1,
+      pageSize: 20,
+    });
     expect(total).toBe(1);
   });
 
   it('list searches FTS by q', () => {
-    repo.insert({ ...sample, id: 'a1'.padEnd(8, '0') + '-1111-4111-8111-111111111111', documentName: 'AWS January' });
-    repo.insert({ ...sample, id: 'a2'.padEnd(8, '0') + '-1111-4111-8111-111111111111', documentName: 'GitHub bill' });
+    repo.insert({
+      ...sample,
+      id: 'a1'.padEnd(8, '0') + '-1111-4111-8111-111111111111',
+      documentName: 'AWS January',
+    });
+    repo.insert({
+      ...sample,
+      id: 'a2'.padEnd(8, '0') + '-1111-4111-8111-111111111111',
+      documentName: 'GitHub bill',
+    });
     const { items, total } = repo.list({ q: 'AWS', page: 1, pageSize: 20 });
     expect(total).toBe(1);
     expect(items[0]?.documentName).toBe('AWS January');
@@ -976,7 +1009,10 @@ describe('receiptsRepo', () => {
 
   it('list paginates', () => {
     for (let i = 0; i < 25; i++) {
-      repo.insert({ ...sample, id: i.toString().padStart(8, '0') + '-1111-4111-8111-111111111111' });
+      repo.insert({
+        ...sample,
+        id: i.toString().padStart(8, '0') + '-1111-4111-8111-111111111111',
+      });
     }
     const { items, total } = repo.list({ page: 2, pageSize: 10 });
     expect(total).toBe(25);
@@ -1152,6 +1188,7 @@ git commit -m "feat(db): add receipts repository with FTS5 search and filtering"
 ### Task 9: File store module
 
 **Files:**
+
 - Create: `server/src/storage/fileStore.ts`
 - Test: `server/test/fileStore.test.ts`
 
@@ -1186,13 +1223,25 @@ describe('fileStore', () => {
   });
 
   it('writes bytes and creates the directory tree', async () => {
-    await store.write('11111111-1111-4111-8111-111111111111', 'png', '2026-01-10', Buffer.from('hi'));
-    const written = fs.readFileSync(path.join(root, '2026', '01', '11111111-1111-4111-8111-111111111111.png'));
+    await store.write(
+      '11111111-1111-4111-8111-111111111111',
+      'png',
+      '2026-01-10',
+      Buffer.from('hi'),
+    );
+    const written = fs.readFileSync(
+      path.join(root, '2026', '01', '11111111-1111-4111-8111-111111111111.png'),
+    );
     expect(written.toString()).toBe('hi');
   });
 
   it('openStream reads back what was written', async () => {
-    await store.write('22222222-2222-4222-8222-222222222222', 'jpg', '2026-02-01', Buffer.from('hello'));
+    await store.write(
+      '22222222-2222-4222-8222-222222222222',
+      'jpg',
+      '2026-02-01',
+      Buffer.from('hello'),
+    );
     const stream = store.openStream('22222222-2222-4222-8222-222222222222', 'jpg', '2026-02-01');
     const chunks: Buffer[] = [];
     for await (const chunk of stream as Readable) chunks.push(Buffer.from(chunk));
@@ -1204,7 +1253,12 @@ describe('fileStore', () => {
   });
 
   it('unlink removes the file', async () => {
-    await store.write('33333333-3333-4333-8333-333333333333', 'pdf', '2026-04-01', Buffer.from('x'));
+    await store.write(
+      '33333333-3333-4333-8333-333333333333',
+      'pdf',
+      '2026-04-01',
+      Buffer.from('x'),
+    );
     await store.unlink('33333333-3333-4333-8333-333333333333', 'pdf', '2026-04-01');
     expect(store.exists('33333333-3333-4333-8333-333333333333', 'pdf', '2026-04-01')).toBe(false);
   });
@@ -1279,6 +1333,7 @@ git commit -m "feat(storage): add file store with date-partitioned paths"
 ### Task 10: Error envelope + error handler middleware
 
 **Files:**
+
 - Create: `server/src/middleware/errorHandler.ts`
 - Test: `server/test/errorHandler.test.ts`
 
@@ -1389,6 +1444,7 @@ git commit -m "feat(server): add ApiError class and error handler middleware"
 ### Task 11: Upload middleware (multer + file-type sniff)
 
 **Files:**
+
 - Create: `server/src/middleware/upload.ts`
 
 - [ ] **Step 1: Implement `server/src/middleware/upload.ts`**
@@ -1451,6 +1507,7 @@ git commit -m "feat(server): add upload middleware with byte-sniff validation"
 ### Task 12: Health route
 
 **Files:**
+
 - Create: `server/src/routes/health.ts`
 
 - [ ] **Step 1: Implement `server/src/routes/health.ts`**
@@ -1481,6 +1538,7 @@ git commit -m "feat(server): add /api/health route"
 ### Task 13: Receipts routes + app wiring
 
 **Files:**
+
 - Create: `server/src/routes/receipts.ts`
 - Create: `server/src/app.ts`
 - Create: `server/test/helpers.ts`
@@ -1660,7 +1718,10 @@ const meta = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-async function uploadOne(env: ReturnType<typeof makeTestEnv>, overrides: Record<string, unknown> = {}) {
+async function uploadOne(
+  env: ReturnType<typeof makeTestEnv>,
+  overrides: Record<string, unknown> = {},
+) {
   return request(env.app)
     .post('/api/receipts')
     .field('metadata', JSON.stringify(meta(overrides)))
@@ -1875,11 +1936,7 @@ Expected: FAIL — `buildApp` and routes don't exist yet.
 import { Router, type Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
-import {
-  ReceiptCreateSchema,
-  ListQuerySchema,
-  type ReceiptDTO,
-} from '@shared/schemas.js';
+import { ReceiptCreateSchema, ListQuerySchema, type ReceiptDTO } from '@shared/schemas.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import {
   uploadMiddleware,
@@ -2064,6 +2121,7 @@ git commit -m "feat(server): wire express app with receipts CRUD, search, and do
 ### Task 14: Server boot (`index.ts`) with fail-fast checks
 
 **Files:**
+
 - Create: `server/src/index.ts`
 
 - [ ] **Step 1: Implement `server/src/index.ts`**
@@ -2101,10 +2159,7 @@ function main(): void {
   const repo = createReceiptsRepo(db);
   const store = createFileStore(cfg.fileRoot);
 
-  const staticDir = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '../../client/dist',
-  );
+  const staticDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
   const app = buildApp({
     repo,
     store,
@@ -2160,6 +2215,7 @@ git commit -m "feat(server): boot with fail-fast writable check and signal handl
 ### Task 15: Vite + React scaffolding
 
 **Files:**
+
 - Create: `vite.config.ts`
 - Create: `client/index.html`
 - Create: `client/src/main.tsx`
@@ -2279,6 +2335,7 @@ git commit -m "feat(client): scaffold vite + react router shell"
 ### Task 16: API client (`api.ts`) with DB_BUSY retry
 
 **Files:**
+
 - Create: `client/src/api.ts`
 - Test: `client/src/api.test.ts`
 
@@ -2366,14 +2423,19 @@ async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
 
   let res = await doFetch();
   if (res.status === 503) {
-    const body = await res.clone().json().catch(() => null);
+    const body = await res
+      .clone()
+      .json()
+      .catch(() => null);
     if (body?.error?.code === 'DB_BUSY') {
       await new Promise((r) => setTimeout(r, 250));
       res = await doFetch();
     }
   }
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: { code: 'INTERNAL', message: res.statusText } }));
+    const body = await res
+      .json()
+      .catch(() => ({ error: { code: 'INTERNAL', message: res.statusText } }));
     throw new ApiClientError(
       body.error?.code ?? 'INTERNAL',
       body.error?.message ?? 'Request failed',
@@ -2442,6 +2504,7 @@ git commit -m "feat(client): add api client with DB_BUSY single-retry"
 ### Task 17: Dropzone component
 
 **Files:**
+
 - Create: `client/src/components/Dropzone.tsx`
 - Test: `client/src/components/Dropzone.test.tsx`
 
@@ -2574,6 +2637,7 @@ git commit -m "feat(client): add Dropzone component with extension validation"
 ### Task 18: UploadPage
 
 **Files:**
+
 - Create: `client/src/pages/UploadPage.tsx`
 - Modify: `client/src/App.tsx` (replace UploadPage placeholder)
 
@@ -2668,7 +2732,10 @@ export function UploadPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label>Type</label>
-          <select value={form.type} onChange={(e) => update('type', e.target.value as typeof form.type)}>
+          <select
+            value={form.type}
+            onChange={(e) => update('type', e.target.value as typeof form.type)}
+          >
             {RECEIPT_TYPES.map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -2786,6 +2853,7 @@ git commit -m "feat(client): add UploadPage with file pick, metadata form, and e
 ### Task 19: BrowsePage (list + filter + search + pagination)
 
 **Files:**
+
 - Create: `client/src/pages/BrowsePage.tsx`
 - Modify: `client/src/App.tsx` (wire route)
 
@@ -2844,9 +2912,21 @@ export function BrowsePage() {
       <aside>
         <h3>Filter</h3>
         <label>Search</label>
-        <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+        <input
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }}
+        />
         <label>Type</label>
-        <select value={type} onChange={(e) => { setType(e.target.value as ReceiptType | ''); setPage(1); }}>
+        <select
+          value={type}
+          onChange={(e) => {
+            setType(e.target.value as ReceiptType | '');
+            setPage(1);
+          }}
+        >
           <option value="">All</option>
           {RECEIPT_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -2855,15 +2935,33 @@ export function BrowsePage() {
           ))}
         </select>
         <label>From</label>
-        <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} />
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => {
+            setDateFrom(e.target.value);
+            setPage(1);
+          }}
+        />
         <label>To</label>
-        <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} />
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => {
+            setDateTo(e.target.value);
+            setPage(1);
+          }}
+        />
       </aside>
       <section>
         <h3>Receipts ({total})</h3>
         {loading && <p>Loading…</p>}
         {error && <p style={{ color: '#c00' }}>{error}</p>}
-        {!loading && items.length === 0 && <p>No receipts yet. <Link to="/">Upload one</Link>.</p>}
+        {!loading && items.length === 0 && (
+          <p>
+            No receipts yet. <Link to="/">Upload one</Link>.
+          </p>
+        )}
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -2880,16 +2978,26 @@ export function BrowsePage() {
                 <td>{r.documentName}</td>
                 <td>{r.type}</td>
                 <td>{r.invoiceDate}</td>
-                <td align="right">{(r.amount / 100).toFixed(2)} {r.currency}</td>
-                <td><Link to={`/receipts/${r.id}`}>View</Link></td>
+                <td align="right">
+                  {(r.amount / 100).toFixed(2)} {r.currency}
+                </td>
+                <td>
+                  <Link to={`/receipts/${r.id}`}>View</Link>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
-          <span>Page {page} / {lastPage}</span>
-          <button disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>Next</button>
+          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            Prev
+          </button>
+          <span>
+            Page {page} / {lastPage}
+          </span>
+          <button disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>
+            Next
+          </button>
         </div>
       </section>
     </div>
@@ -2923,6 +3031,7 @@ git commit -m "feat(client): add BrowsePage with filter, search, and pagination"
 ### Task 20: ReceiptDetailPage (view + download + delete)
 
 **Files:**
+
 - Create: `client/src/pages/ReceiptDetailPage.tsx`
 - Modify: `client/src/App.tsx` (wire route)
 
@@ -2965,23 +3074,44 @@ export function ReceiptDetailPage() {
   }
 
   if (loading) return <p style={{ padding: 16 }}>Loading…</p>;
-  if (error) return <p style={{ padding: 16, color: '#c00' }}>{error} (<Link to="/browse">back</Link>)</p>;
+  if (error)
+    return (
+      <p style={{ padding: 16, color: '#c00' }}>
+        {error} (<Link to="/browse">back</Link>)
+      </p>
+    );
   if (!dto) return null;
 
   return (
     <div style={{ padding: 16, maxWidth: 720 }}>
       <h2>{dto.documentName}</h2>
       <dl>
-        <dt>Type</dt><dd>{dto.type}</dd>
-        <dt>Invoice date</dt><dd>{dto.invoiceDate}</dd>
-        <dt>Amount</dt><dd>{(dto.amount / 100).toFixed(2)} {dto.currency}</dd>
-        {dto.note && (<><dt>Note</dt><dd>{dto.note}</dd></>)}
-        <dt>Original file</dt><dd>{dto.originalName} ({Math.round(dto.sizeBytes / 1024)} KB)</dd>
-        <dt>Uploaded</dt><dd>{new Date(dto.createdAt).toLocaleString()}</dd>
+        <dt>Type</dt>
+        <dd>{dto.type}</dd>
+        <dt>Invoice date</dt>
+        <dd>{dto.invoiceDate}</dd>
+        <dt>Amount</dt>
+        <dd>
+          {(dto.amount / 100).toFixed(2)} {dto.currency}
+        </dd>
+        {dto.note && (
+          <>
+            <dt>Note</dt>
+            <dd>{dto.note}</dd>
+          </>
+        )}
+        <dt>Original file</dt>
+        <dd>
+          {dto.originalName} ({Math.round(dto.sizeBytes / 1024)} KB)
+        </dd>
+        <dt>Uploaded</dt>
+        <dd>{new Date(dto.createdAt).toLocaleString()}</dd>
       </dl>
       <div style={{ display: 'flex', gap: 12 }}>
         <a href={api.fileUrl(dto.id)}>Download original</a>
-        <button onClick={onDelete} style={{ color: '#c00' }}>Delete</button>
+        <button onClick={onDelete} style={{ color: '#c00' }}>
+          Delete
+        </button>
         <Link to="/browse">Back to list</Link>
       </div>
     </div>
@@ -3017,6 +3147,7 @@ git commit -m "feat(client): add ReceiptDetailPage with download and delete"
 ### Task 21: Multi-stage Dockerfile
 
 **Files:**
+
 - Create: `Dockerfile`
 
 - [ ] **Step 1: Write the Dockerfile**
@@ -3092,6 +3223,7 @@ git commit -m "build: add multi-stage Dockerfile (client → server → runtime)
 ### Task 22: docker-compose.yml + README deploy steps
 
 **Files:**
+
 - Create: `docker-compose.yml`
 - Create: `README.md` (overwrite the stub if one exists)
 
@@ -3105,7 +3237,7 @@ services:
     container_name: receipts
     restart: unless-stopped
     ports:
-      - "5900:5900"
+      - '5900:5900'
     volumes:
       - /volume1/docker/Document-Management:/data
     environment:
@@ -3116,7 +3248,7 @@ services:
 
 - [ ] **Step 2: Create `README.md`**
 
-```markdown
+````markdown
 # Inhouse Document Management
 
 LAN-only receipt management system for a small office.
@@ -3128,8 +3260,8 @@ Deployed via Portainer on a Synology NAS.
 \`\`\`bash
 npm install
 mkdir -p ./.local-data/db ./.local-data/file
-DATA_DIR=$(pwd)/.local-data npm run dev:server   # API at :5900
-npm run dev:client                                # Vite dev at :5173 (proxies /api)
+DATA_DIR=$(pwd)/.local-data npm run dev:server # API at :5900
+npm run dev:client # Vite dev at :5173 (proxies /api)
 \`\`\`
 
 Open http://localhost:5173.
@@ -3137,9 +3269,9 @@ Open http://localhost:5173.
 ## Testing
 
 \`\`\`bash
-npm test                 # unit + integration
-npm run test:coverage    # with coverage gate (≥ 80%)
-npm run test:e2e         # playwright
+npm test # unit + integration
+npm run test:coverage # with coverage gate (≥ 80%)
+npm run test:e2e # playwright
 \`\`\`
 
 ## Production deploy (Synology + Portainer)
@@ -3182,6 +3314,7 @@ Backing up that one folder backs up everything.
 git add docker-compose.yml README.md
 git commit -m "build: add docker-compose and Portainer + Synology deploy guide"
 ```
+````
 
 ---
 
@@ -3190,6 +3323,7 @@ git commit -m "build: add docker-compose and Portainer + Synology deploy guide"
 ### Task 23: GitHub Actions workflow
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`
 
 - [ ] **Step 1: Create the workflow**
@@ -3250,6 +3384,7 @@ git commit -m "ci: add GitHub Actions for lint, typecheck, tests, coverage, e2e,
 ### Task 24: Playwright config + global setup
 
 **Files:**
+
 - Create: `playwright.config.ts`
 - Create: `e2e/fixtures/sample.pdf` (a minimal valid PDF)
 
@@ -3311,6 +3446,7 @@ git commit -m "test(e2e): configure playwright with managed server and tmp DATA_
 ### Task 25: Golden-path E2E
 
 **Files:**
+
 - Create: `e2e/golden-path.spec.ts`
 
 - [ ] **Step 1: Write the test**
@@ -3373,6 +3509,7 @@ git commit -m "test(e2e): golden path — upload, browse, detail, download"
 ### Task 26: Search and filter E2E
 
 **Files:**
+
 - Create: `e2e/search.spec.ts`
 - Create: `e2e/filter.spec.ts`
 
@@ -3462,6 +3599,7 @@ git commit -m "test(e2e): search and filter flows"
 ### Task 27: Delete E2E
 
 **Files:**
+
 - Create: `e2e/delete.spec.ts`
 
 - [ ] **Step 1: Write the test**
@@ -3524,24 +3662,24 @@ Before tagging v1 and pushing to `main`:
 
 ## Spec coverage map
 
-| Spec section | Tasks |
-|---|---|
-| §3 Architecture (port 5900, container, bind-mount, Portainer Git stack) | 21, 22 |
-| §3.3 Project layout | 1 |
-| §4.1 Server modules | 4, 5, 6, 7, 8, 9, 11, 12, 14, 10, 13 |
-| §4.2 Client modules | 15, 17, 18, 19, 20 |
-| §4.3 Shared schemas | 3 |
-| §5 API surface (POST, GET list, GET :id, GET file, DELETE, health) | 13, 12 |
-| §6.1 Upload flow (file-then-DB, rollback) | 13 |
-| §6.2 List/search flow + FTS5 | 8, 13 |
-| §6.3 Download flow | 13 |
-| §6.4 Delete flow | 13 |
-| §7 Database schema + indexes + FTS + triggers | 6, 7 |
-| §8.1 Failure modes (each row) | 10, 11, 13, 14 |
-| §8.2 Error envelope | 10 |
-| §8.3 Logging | 5, 13 |
-| §8.4 Client error display | 16, 18 |
-| §8.5 Boundary discipline | 3, 4, 13 |
+| Spec section                                                            | Tasks                                |
+| ----------------------------------------------------------------------- | ------------------------------------ |
+| §3 Architecture (port 5900, container, bind-mount, Portainer Git stack) | 21, 22                               |
+| §3.3 Project layout                                                     | 1                                    |
+| §4.1 Server modules                                                     | 4, 5, 6, 7, 8, 9, 11, 12, 14, 10, 13 |
+| §4.2 Client modules                                                     | 15, 17, 18, 19, 20                   |
+| §4.3 Shared schemas                                                     | 3                                    |
+| §5 API surface (POST, GET list, GET :id, GET file, DELETE, health)      | 13, 12                               |
+| §6.1 Upload flow (file-then-DB, rollback)                               | 13                                   |
+| §6.2 List/search flow + FTS5                                            | 8, 13                                |
+| §6.3 Download flow                                                      | 13                                   |
+| §6.4 Delete flow                                                        | 13                                   |
+| §7 Database schema + indexes + FTS + triggers                           | 6, 7                                 |
+| §8.1 Failure modes (each row)                                           | 10, 11, 13, 14                       |
+| §8.2 Error envelope                                                     | 10                                   |
+| §8.3 Logging                                                            | 5, 13                                |
+| §8.4 Client error display                                               | 16, 18                               |
+| §8.5 Boundary discipline                                                | 3, 4, 13                             |
 | §9 Testing strategy (Vitest, supertest, Playwright, 80% gate, no mocks) | 2, 3, 7, 8, 9, 10, 13, 16, 17, 24–27 |
-| §9.4 CI gates | 23 |
-| §10 Risks/non-goals (no auth, no virus scan, no rate limit) | enforced by absence |
+| §9.4 CI gates                                                           | 23                                   |
+| §10 Risks/non-goals (no auth, no virus scan, no rate limit)             | enforced by absence                  |
