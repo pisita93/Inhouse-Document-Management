@@ -1,10 +1,7 @@
 import { Routes, Route, NavLink } from 'react-router-dom';
 import { UploadPage } from './pages/UploadPage.js';
 import { BrowsePage } from './pages/BrowsePage.js';
-
-function Placeholder({ name }: { name: string }) {
-  return <div style={{ padding: 16 }}>{name} (not yet implemented)</div>;
-}
+import { ReceiptDetailPage } from './pages/ReceiptDetailPage.js';
 
 export function App() {
   return (
@@ -18,7 +15,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<UploadPage />} />
           <Route path="/browse" element={<BrowsePage />} />
-          <Route path="/receipts/:id" element={<Placeholder name="Detail" />} />
+          <Route path="/receipts/:id" element={<ReceiptDetailPage />} />
         </Routes>
       </main>
     </div>
