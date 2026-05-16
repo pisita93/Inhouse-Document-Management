@@ -1,0 +1,14 @@
+services:
+  receipts:
+    build: .
+    image: receipts-app:latest
+    container_name: receipts
+    restart: unless-stopped
+    ports:
+      - "5900:5900"
+    volumes:
+      - /volume1/docker/Document-Management:/data
+    environment:
+      - PORT=5900
+      - DATA_DIR=/data
+      - NODE_ENV=production
