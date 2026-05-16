@@ -1,4 +1,5 @@
 import { Routes, Route, NavLink } from 'react-router-dom';
+import { UploadPage } from './pages/UploadPage.js';
 
 function Placeholder({ name }: { name: string }) {
   return <div style={{ padding: 16 }}>{name} (not yet implemented)</div>;
@@ -14,7 +15,7 @@ export function App() {
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<Placeholder name="Upload" />} />
+          <Route path="/" element={<UploadPage />} />
           <Route path="/browse" element={<Placeholder name="Browse" />} />
           <Route path="/receipts/:id" element={<Placeholder name="Detail" />} />
         </Routes>
