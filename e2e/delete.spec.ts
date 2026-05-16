@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test-helpers';
 import path from 'node:path';
 
 test('delete removes receipt from list and detail URL 404s', async ({ page }) => {

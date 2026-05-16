@@ -32,6 +32,7 @@ function main(): void {
     repo,
     store,
     staticDir: fs.existsSync(staticDir) ? staticDir : undefined,
+    testResetEnabled: process.env.E2E_RESET_ENABLED === '1',
   });
 
   const server = app.listen(cfg.port, () => {

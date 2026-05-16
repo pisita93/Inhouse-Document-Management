@@ -33,7 +33,12 @@ export function createFileStore(root: string) {
     }
   }
 
-  return { derivePath, write, openStream, exists, unlink };
+  async function reset(): Promise<void> {
+    await fsp.rm(root, { recursive: true, force: true });
+    await fsp.mkdir(root, { recursive: true });
+  }
+
+  return { derivePath, write, openStream, exists, unlink, reset };
 }
 
 export type FileStore = ReturnType<typeof createFileStore>;

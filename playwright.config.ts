@@ -10,6 +10,7 @@ fs.mkdirSync(path.join(dataDir, 'file'), { recursive: true });
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
+  workers: 1,
   reporter: 'list',
   use: {
     baseURL: 'http://127.0.0.1:5900',
@@ -23,6 +24,7 @@ export default defineConfig({
       PORT: '5900',
       NODE_ENV: 'production',
       LOG_LEVEL: 'warn',
+      E2E_RESET_ENABLED: '1',
     },
     timeout: 30000,
     reuseExistingServer: false,

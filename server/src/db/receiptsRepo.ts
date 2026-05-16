@@ -120,5 +120,9 @@ export function createReceiptsRepo(db: DB) {
       const info = deleteStmt.run(id);
       return info.changes > 0;
     },
+
+    reset(): void {
+      db.prepare('DELETE FROM receipts').run();
+    },
   };
 }

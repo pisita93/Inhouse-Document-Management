@@ -11,6 +11,7 @@ export interface AppDeps {
   repo: ReturnType<typeof createReceiptsRepo>;
   store: FileStore;
   staticDir?: string;
+  testResetEnabled?: boolean;
 }
 
 export function buildApp(deps: AppDeps): Express {
@@ -18,6 +19,17 @@ export function buildApp(deps: AppDeps): Express {
   app.disable('x-powered-by');
   app.use(pinoHttp({ logger }));
   app.use('/api/health', healthRouter());
+  if (deps.testResetEnabled) {
+    app.post('/api/test/reset', async (_req, res, next) => {
+      try {
+        deps.repo.reset();
+        await deps.store.reset();
+        res.json({ ok: true });
+      } catch (err) {
+        next(err);
+      }
+    });
+  }
   app.use('/api/receipts', receiptsRouter(deps));
   if (deps.staticDir) {
     app.use(express.static(deps.staticDir));

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test-helpers';
 import path from 'node:path';
 
 test('upload → browse → detail → download', async ({ page }) => {
