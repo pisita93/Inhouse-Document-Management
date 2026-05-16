@@ -1,10 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { DB } from './connection.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MIGRATIONS_DIR = path.resolve(__dirname, '../../../migrations');
+const MIGRATIONS_DIR = path.resolve(process.cwd(), 'migrations');
 
 export function runMigrations(db: DB, migrationsDir = MIGRATIONS_DIR): void {
   const files = fs

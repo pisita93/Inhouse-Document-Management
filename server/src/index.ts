@@ -7,7 +7,6 @@ import { createReceiptsRepo } from './db/receiptsRepo.js';
 import { createFileStore } from './storage/fileStore.js';
 import { buildApp } from './app.js';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 function assertWritable(dir: string): void {
   fs.mkdirSync(dir, { recursive: true });
@@ -28,7 +27,7 @@ function main(): void {
   const repo = createReceiptsRepo(db);
   const store = createFileStore(cfg.fileRoot);
 
-  const staticDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
+  const staticDir = path.resolve(process.cwd(), 'client/dist');
   const app = buildApp({
     repo,
     store,
