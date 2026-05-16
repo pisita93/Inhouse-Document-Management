@@ -1,5 +1,5 @@
 import type { DB } from './connection.js';
-import type { ReceiptDTO, ReceiptType, Currency, ListQuery } from '@shared/schemas.js';
+import type { ReceiptDTO, ReceiptType, Currency, ListQuery } from '../../../shared/schemas.js';
 
 interface ReceiptRow {
   id: string;

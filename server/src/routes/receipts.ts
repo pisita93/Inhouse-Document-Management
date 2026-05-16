@@ -1,7 +1,7 @@
 import { Router, type Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
-import { ReceiptCreateSchema, ListQuerySchema, type ReceiptDTO } from '@shared/schemas.js';
+import { ReceiptCreateSchema, ListQuerySchema, type ReceiptDTO } from '../../../shared/schemas.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { uploadMiddleware, sniffOrThrow, multerErrorAsApiError } from '../middleware/upload.js';
 import type { createReceiptsRepo } from '../db/receiptsRepo.js';
