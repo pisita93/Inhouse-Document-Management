@@ -74,8 +74,9 @@ export function UploadPage() {
         <Dropzone onFile={setFile} />
       )}
 
-      <label>Document Name</label>
+      <label htmlFor="upload-document-name">Document Name</label>
       <input
+        id="upload-document-name"
         value={form.documentName}
         onChange={(e) => update('documentName', e.target.value)}
         required
@@ -85,8 +86,9 @@ export function UploadPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label>Type</label>
+          <label htmlFor="upload-type">Type</label>
           <select
+            id="upload-type"
             value={form.type}
             onChange={(e) => update('type', e.target.value as typeof form.type)}
           >
@@ -98,8 +100,9 @@ export function UploadPage() {
           </select>
         </div>
         <div>
-          <label>Invoice Date</label>
+          <label htmlFor="upload-invoice-date">Invoice Date</label>
           <input
+            id="upload-invoice-date"
             type="date"
             value={form.invoiceDate}
             onChange={(e) => update('invoiceDate', e.target.value)}
@@ -110,8 +113,9 @@ export function UploadPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
         <div>
-          <label>Amount</label>
+          <label htmlFor="upload-amount">Amount</label>
           <input
+            id="upload-amount"
             value={form.amountMajor}
             onChange={(e) => update('amountMajor', e.target.value)}
             placeholder="0.00"
@@ -120,8 +124,9 @@ export function UploadPage() {
           {fieldErrors.amountMajor && <p style={{ color: '#c00' }}>{fieldErrors.amountMajor}</p>}
         </div>
         <div>
-          <label>Currency</label>
+          <label htmlFor="upload-currency">Currency</label>
           <select
+            id="upload-currency"
             value={form.currency}
             onChange={(e) => update('currency', e.target.value as typeof form.currency)}
           >
@@ -134,8 +139,9 @@ export function UploadPage() {
         </div>
       </div>
 
-      <label>Additional Note</label>
+      <label htmlFor="upload-note">Additional Note</label>
       <textarea
+        id="upload-note"
         value={form.note}
         onChange={(e) => update('note', e.target.value)}
         rows={3}

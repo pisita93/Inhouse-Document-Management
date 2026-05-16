@@ -49,16 +49,18 @@ export function BrowsePage() {
     <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '240px 1fr', gap: 16 }}>
       <aside>
         <h3>Filter</h3>
-        <label>Search</label>
+        <label htmlFor="filter-search">Search</label>
         <input
+          id="filter-search"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
             setPage(1);
           }}
         />
-        <label>Type</label>
+        <label htmlFor="filter-type">Type</label>
         <select
+          id="filter-type"
           value={type}
           onChange={(e) => {
             setType(e.target.value as ReceiptType | '');
@@ -72,8 +74,9 @@ export function BrowsePage() {
             </option>
           ))}
         </select>
-        <label>From</label>
+        <label htmlFor="filter-from">From</label>
         <input
+          id="filter-from"
           type="date"
           value={dateFrom}
           onChange={(e) => {
@@ -81,8 +84,9 @@ export function BrowsePage() {
             setPage(1);
           }}
         />
-        <label>To</label>
+        <label htmlFor="filter-to">To</label>
         <input
+          id="filter-to"
           type="date"
           value={dateTo}
           onChange={(e) => {
