@@ -67,15 +67,34 @@ describe('documentsRepo', () => {
   });
 
   it('list orders by document_date DESC then created_at DESC', () => {
-    repo.insert({ ...baseInvoice, id: 'a'.repeat(8) + '-1111-4111-8111-111111111111', documentDate: '2026-01-01' });
-    repo.insert({ ...baseInvoice, id: 'b'.repeat(8) + '-1111-4111-8111-111111111111', documentDate: '2026-03-01' });
+    repo.insert({
+      ...baseInvoice,
+      id: 'a'.repeat(8) + '-1111-4111-8111-111111111111',
+      documentDate: '2026-01-01',
+    });
+    repo.insert({
+      ...baseInvoice,
+      id: 'b'.repeat(8) + '-1111-4111-8111-111111111111',
+      documentDate: '2026-03-01',
+    });
     const { items } = repo.list({ page: 1, pageSize: 20 });
     expect(items[0]?.documentDate).toBe('2026-03-01');
   });
 
   it('list filters by type across the new enum', () => {
-    repo.insert({ ...baseInvoice, id: 'c'.repeat(8) + '-1111-4111-8111-111111111111', type: 'policy', invoiceDate: null, amount: null, currency: null });
-    repo.insert({ ...baseInvoice, id: 'd'.repeat(8) + '-1111-4111-8111-111111111111', type: 'invoice' });
+    repo.insert({
+      ...baseInvoice,
+      id: 'c'.repeat(8) + '-1111-4111-8111-111111111111',
+      type: 'policy',
+      invoiceDate: null,
+      amount: null,
+      currency: null,
+    });
+    repo.insert({
+      ...baseInvoice,
+      id: 'd'.repeat(8) + '-1111-4111-8111-111111111111',
+      type: 'invoice',
+    });
     expect(repo.list({ type: 'policy', page: 1, pageSize: 20 }).total).toBe(1);
     expect(repo.list({ type: 'invoice', page: 1, pageSize: 20 }).total).toBe(1);
   });
@@ -83,7 +102,12 @@ describe('documentsRepo', () => {
   it('invoiceDateFrom/To excludes rows with NULL invoice_date', () => {
     repo.insert(baseInvoice);
     repo.insert(baseContract);
-    const r = repo.list({ invoiceDateFrom: '2026-01-01', invoiceDateTo: '2026-12-31', page: 1, pageSize: 20 });
+    const r = repo.list({
+      invoiceDateFrom: '2026-01-01',
+      invoiceDateTo: '2026-12-31',
+      page: 1,
+      pageSize: 20,
+    });
     expect(r.total).toBe(1);
     expect(r.items[0]?.id).toBe(baseInvoice.id);
   });
@@ -91,7 +115,12 @@ describe('documentsRepo', () => {
   it('uploadDateFrom/To filters on document_date and includes non-financial rows', () => {
     repo.insert(baseInvoice);
     repo.insert(baseContract);
-    const r = repo.list({ uploadDateFrom: '2026-02-01', uploadDateTo: '2026-02-28', page: 1, pageSize: 20 });
+    const r = repo.list({
+      uploadDateFrom: '2026-02-01',
+      uploadDateTo: '2026-02-28',
+      page: 1,
+      pageSize: 20,
+    });
     expect(r.total).toBe(1);
     expect(r.items[0]?.id).toBe(baseContract.id);
   });
@@ -118,7 +147,11 @@ describe('documentsRepo', () => {
 
   it('list searches FTS by q across new schema', () => {
     repo.insert({ ...baseInvoice, documentName: 'AWS January' });
-    repo.insert({ ...baseInvoice, id: 'f'.repeat(8) + '-1111-4111-8111-111111111111', documentName: 'GitHub bill' });
+    repo.insert({
+      ...baseInvoice,
+      id: 'f'.repeat(8) + '-1111-4111-8111-111111111111',
+      documentName: 'GitHub bill',
+    });
     const r = repo.list({ q: 'AWS', page: 1, pageSize: 20 });
     expect(r.total).toBe(1);
   });

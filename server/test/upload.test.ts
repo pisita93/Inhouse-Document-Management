@@ -67,10 +67,7 @@ describe('POST /api/documents', () => {
     const today = new Date().toISOString().slice(0, 10);
     const res = await request(env.app)
       .post('/api/documents')
-      .field(
-        'metadata',
-        JSON.stringify({ ...validInvoice, documentDate: '2099-12-31' }),
-      )
+      .field('metadata', JSON.stringify({ ...validInvoice, documentDate: '2099-12-31' }))
       .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
     expect(res.status).toBe(201);
     expect(res.body.documentDate).toBe(today);

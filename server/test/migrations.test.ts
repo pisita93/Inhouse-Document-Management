@@ -21,9 +21,10 @@ describe('migrations', () => {
   it('fresh DB has documents table with 10-value type CHECK + both date indexes', () => {
     runMigrations(db);
 
-    const cols = db
-      .prepare(`PRAGMA table_info(documents)`)
-      .all() as Array<{ name: string; notnull: number }>;
+    const cols = db.prepare(`PRAGMA table_info(documents)`).all() as Array<{
+      name: string;
+      notnull: number;
+    }>;
     const colNames = cols.map((c) => c.name);
     expect(colNames).toEqual(
       expect.arrayContaining([
@@ -102,7 +103,10 @@ describe('migrations', () => {
 
     const row = db
       .prepare(`SELECT document_date, invoice_date FROM documents WHERE id = ?`)
-      .get('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') as { document_date: string; invoice_date: string };
+      .get('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') as {
+      document_date: string;
+      invoice_date: string;
+    };
     expect(row.document_date).toBe('2026-01-20');
     expect(row.invoice_date).toBe('2026-01-15');
   });

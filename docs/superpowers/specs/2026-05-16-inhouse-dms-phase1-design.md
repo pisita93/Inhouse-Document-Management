@@ -17,14 +17,14 @@ Subsequent phases (out of scope here) will add categories/tags, edit/versioning,
 
 ## Decisions confirmed during brainstorming
 
-| Decision | Choice |
-|---|---|
-| UI direction | SAP Fiori as inspiration only — no UI5 framework. Keep React + Vite. |
-| Document type set | Hard-coded enum of 10 values. Configurable types defer to Phase 2. |
-| Form behavior for non-financial types | Hide financial fields entirely. |
-| Rename scope | Full rename of DB table, API routes, and code (`receipts` → `documents`). No backward-compat alias. |
-| Date columns | Two columns: `document_date` is server-set to the upload date (YYYY-MM-DD, NOT NULL, every row); `invoice_date` is user-entered, nullable, required for `invoice` / `receipt` only. Both indexed. |
-| File-store path | Derived from `createdAt` (upload time) year/month. Same layout for every type. |
+| Decision                              | Choice                                                                                                                                                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI direction                          | SAP Fiori as inspiration only — no UI5 framework. Keep React + Vite.                                                                                                                              |
+| Document type set                     | Hard-coded enum of 10 values. Configurable types defer to Phase 2.                                                                                                                                |
+| Form behavior for non-financial types | Hide financial fields entirely.                                                                                                                                                                   |
+| Rename scope                          | Full rename of DB table, API routes, and code (`receipts` → `documents`). No backward-compat alias.                                                                                               |
+| Date columns                          | Two columns: `document_date` is server-set to the upload date (YYYY-MM-DD, NOT NULL, every row); `invoice_date` is user-entered, nullable, required for `invoice` / `receipt` only. Both indexed. |
+| File-store path                       | Derived from `createdAt` (upload time) year/month. Same layout for every type.                                                                                                                    |
 
 ## Out of scope (explicit)
 
@@ -53,14 +53,14 @@ Stored snake_case in DB, presented title-cased in UI:
 
 ### Database column changes
 
-| Old (`receipts`) | New (`documents`) | Notes |
-|---|---|---|
-| `invoice_date` (TEXT NOT NULL) | `invoice_date` (TEXT, nullable) | Same column name; meaning narrowed to "financial document date". Required for `invoice` / `receipt`, NULL otherwise. |
-| — (new) | `document_date` (TEXT NOT NULL) | **New column.** Server-set to today's `YYYY-MM-DD` on insert. Represents the upload date. Backfilled on migration from `substr(created_at, 1, 10)`. |
-| `amount` (INTEGER NOT NULL) | `amount` (INTEGER, nullable) | Only `invoice` / `receipt` populate it. |
-| `currency` (TEXT NOT NULL) | `currency` (TEXT, nullable) | Same. |
-| `type` CHECK in 4 values | `type` CHECK in 10 values | New enum. |
-| `created_at` | unchanged | Full ISO timestamp; retained for sort tiebreaker and audit. |
+| Old (`receipts`)               | New (`documents`)               | Notes                                                                                                                                               |
+| ------------------------------ | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invoice_date` (TEXT NOT NULL) | `invoice_date` (TEXT, nullable) | Same column name; meaning narrowed to "financial document date". Required for `invoice` / `receipt`, NULL otherwise.                                |
+| — (new)                        | `document_date` (TEXT NOT NULL) | **New column.** Server-set to today's `YYYY-MM-DD` on insert. Represents the upload date. Backfilled on migration from `substr(created_at, 1, 10)`. |
+| `amount` (INTEGER NOT NULL)    | `amount` (INTEGER, nullable)    | Only `invoice` / `receipt` populate it.                                                                                                             |
+| `currency` (TEXT NOT NULL)     | `currency` (TEXT, nullable)     | Same.                                                                                                                                               |
+| `type` CHECK in 4 values       | `type` CHECK in 10 values       | New enum.                                                                                                                                           |
+| `created_at`                   | unchanged                       | Full ISO timestamp; retained for sort tiebreaker and audit.                                                                                         |
 
 ### Column semantics
 
@@ -78,15 +78,15 @@ Enforced in the **API layer** (zod discriminated union), **not** in the DB. The 
 
 All routes move under `/api/documents`. LAN-only app, no consumers besides our SPA, no compat alias.
 
-| Method | Path | Behavior |
-|---|---|---|
-| `POST`   | `/api/documents` | Upload. Multipart: `metadata` JSON + `file`. Server sets `document_date` to today; client never sends it. |
-| `GET`    | `/api/documents` | List with `q`, `type`, `invoiceDateFrom`, `invoiceDateTo`, `uploadDateFrom`, `uploadDateTo`, `page`, `pageSize`. |
-| `GET`    | `/api/documents/:id` | Detail. |
-| `GET`    | `/api/documents/:id/file` | Download original. |
-| `DELETE` | `/api/documents/:id` | Remove. |
-| `GET`    | `/api/health` | unchanged. |
-| `POST`   | `/api/test/reset` | unchanged (still gated on `E2E_RESET_ENABLED`). |
+| Method   | Path                      | Behavior                                                                                                         |
+| -------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `POST`   | `/api/documents`          | Upload. Multipart: `metadata` JSON + `file`. Server sets `document_date` to today; client never sends it.        |
+| `GET`    | `/api/documents`          | List with `q`, `type`, `invoiceDateFrom`, `invoiceDateTo`, `uploadDateFrom`, `uploadDateTo`, `page`, `pageSize`. |
+| `GET`    | `/api/documents/:id`      | Detail.                                                                                                          |
+| `GET`    | `/api/documents/:id/file` | Download original.                                                                                               |
+| `DELETE` | `/api/documents/:id`      | Remove.                                                                                                          |
+| `GET`    | `/api/health`             | unchanged.                                                                                                       |
+| `POST`   | `/api/test/reset`         | unchanged (still gated on `E2E_RESET_ENABLED`).                                                                  |
 
 ### Shared zod schemas (`shared/schemas.ts`)
 
@@ -108,12 +108,12 @@ All routes move under `/api/documents`. LAN-only app, no consumers besides our S
 
 ### File / symbol renames
 
-| Old | New |
-|---|---|
+| Old                             | New                              |
+| ------------------------------- | -------------------------------- |
 | `server/src/routes/receipts.ts` | `server/src/routes/documents.ts` |
 | `server/src/db/receiptsRepo.ts` | `server/src/db/documentsRepo.ts` |
-| `createReceiptsRepo` | `createDocumentsRepo` |
-| `receiptsRouter` | `documentsRouter` |
+| `createReceiptsRepo`            | `createDocumentsRepo`            |
+| `receiptsRouter`                | `documentsRouter`                |
 
 `AppDeps.repo` keeps its generic field name.
 
@@ -127,17 +127,17 @@ All routes move under `/api/documents`. LAN-only app, no consumers besides our S
 
 Signature change in `server/src/storage/fileStore.ts`:
 
-| Old | New |
-|---|---|
+| Old                                  | New                                |
+| ------------------------------------ | ---------------------------------- |
 | `write(id, ext, invoiceDate, bytes)` | `write(id, ext, createdAt, bytes)` |
-| `openStream(id, ext, invoiceDate)` | `openStream(id, ext, createdAt)` |
-| `exists(id, ext, invoiceDate)` | `exists(id, ext, createdAt)` |
-| `unlink(id, ext, invoiceDate)` | `unlink(id, ext, createdAt)` |
-| `derivePath(id, ext, invoiceDate)` | `derivePath(id, ext, createdAt)` |
+| `openStream(id, ext, invoiceDate)`   | `openStream(id, ext, createdAt)`   |
+| `exists(id, ext, invoiceDate)`       | `exists(id, ext, createdAt)`       |
+| `unlink(id, ext, invoiceDate)`       | `unlink(id, ext, createdAt)`       |
+| `derivePath(id, ext, invoiceDate)`   | `derivePath(id, ext, createdAt)`   |
 
 `createdAt` is the ISO-8601 string the route already generates; `derivePath` slices `[0..4]` for year and `[5..7]` for month — same shape as the old `YYYY-MM-DD` input, so the parsing logic is unchanged.
 
-> **Filtering & reporting on invoice date is unaffected.** This `createdAt`-based path change only affects the *on-disk file location*. The `invoice_date` column is still stored for every `invoice` / `receipt`, still indexed (`idx_documents_invoice_date`, see §5), and still drives `GET /api/documents?invoiceDateFrom=…&invoiceDateTo=…`. Future financial reports that pivot on the invoice date keep working — only the directory layout under `DATA_DIR/file/` changed.
+> **Filtering & reporting on invoice date is unaffected.** This `createdAt`-based path change only affects the _on-disk file location_. The `invoice_date` column is still stored for every `invoice` / `receipt`, still indexed (`idx_documents_invoice_date`, see §5), and still drives `GET /api/documents?invoiceDateFrom=…&invoiceDateTo=…`. Future financial reports that pivot on the invoice date keep working — only the directory layout under `DATA_DIR/file/` changed.
 
 ---
 
@@ -164,10 +164,10 @@ The document/upload date is never rendered as an input — it's server-assigned.
 
 ### Field rendering matrix
 
-| Type | Doc Name | Invoice Date | Amount | Currency | Note |
-|---|---|---|---|---|---|
+| Type                 | Doc Name | Invoice Date                | Amount       | Currency                  | Note     |
+| -------------------- | -------- | --------------------------- | ------------ | ------------------------- | -------- |
 | `invoice`, `receipt` | required | **required**, default today | **required** | **required**, default THB | optional |
-| All 8 other types | required | hidden | hidden | hidden | optional |
+| All 8 other types    | required | hidden                      | hidden       | hidden                    | optional |
 
 ### Convenience behavior
 
@@ -192,29 +192,29 @@ Design tokens, ShellBar, sub-bar, side filter panel, dense table. Implemented as
 
 ### Color tokens
 
-| Token | Value | Use |
-|---|---|---|
-| `--fi-bg` | `#f7f7f7` | App background |
-| `--fi-surface` | `#ffffff` | Cards, side panel, table body |
-| `--fi-line` | `#e5e5e5` | Borders, dividers |
-| `--fi-ink` | `#32363a` | Primary text + ShellBar |
-| `--fi-ink-soft` | `#6a6d70` | Secondary text, table headers |
-| `--fi-accent` | `#0a6ed1` | Primary buttons, links, focus |
+| Token             | Value     | Use                             |
+| ----------------- | --------- | ------------------------------- |
+| `--fi-bg`         | `#f7f7f7` | App background                  |
+| `--fi-surface`    | `#ffffff` | Cards, side panel, table body   |
+| `--fi-line`       | `#e5e5e5` | Borders, dividers               |
+| `--fi-ink`        | `#32363a` | Primary text + ShellBar         |
+| `--fi-ink-soft`   | `#6a6d70` | Secondary text, table headers   |
+| `--fi-accent`     | `#0a6ed1` | Primary buttons, links, focus   |
 | `--fi-accent-dim` | `#d3e8fb` | Avatar pill, accent backgrounds |
-| `--fi-warn` | `#b8540c` | Policy chip, validation hint |
-| `--fi-ok` | `#107e3e` | Contract chip, success states |
-| `--fi-radius` | `4px` | Button + input border radius |
+| `--fi-warn`       | `#b8540c` | Policy chip, validation hint    |
+| `--fi-ok`         | `#107e3e` | Contract chip, success states   |
+| `--fi-radius`     | `4px`     | Button + input border radius    |
 
 ### Type chip palette
 
 Each document type renders as a `<span class="fi-chip ...">`. Color mapping:
 
-| Type | Treatment |
-|---|---|
-| `invoice`, `receipt`, `quotation` | accent blue — `#0a6ed1` on `#eef3f9`, border `#d3e2f4` |
-| `contract`, `certificate` | green — `#107e3e` on `#f0f7ee`, border `#d4e9c8` |
-| `policy` | warn orange — `#b8540c` on `#fdf5e8`, border `#f3dbb8` |
-| `hr_document` | purple — `#6f3ec2` on `#f4eefa`, border `#dccbef` |
+| Type                                 | Treatment                                                       |
+| ------------------------------------ | --------------------------------------------------------------- |
+| `invoice`, `receipt`, `quotation`    | accent blue — `#0a6ed1` on `#eef3f9`, border `#d3e2f4`          |
+| `contract`, `certificate`            | green — `#107e3e` on `#f0f7ee`, border `#d4e9c8`                |
+| `policy`                             | warn orange — `#b8540c` on `#fdf5e8`, border `#f3dbb8`          |
+| `hr_document`                        | purple — `#6f3ec2` on `#f4eefa`, border `#dccbef`               |
 | `meeting_minutes`, `report`, `other` | neutral gray — `--fi-ink-soft` on `#f2f2f2`, border `--fi-line` |
 
 The CSS lives in `client/src/styles/tokens.css` alongside the color tokens.
@@ -249,12 +249,12 @@ The CSS lives in `client/src/styles/tokens.css` alongside the color tokens.
 
 ### Page touchpoints
 
-| Page | Phase 1 changes |
-|---|---|
-| `UploadPage` | New shell. Form field set conditionally rendered via `requiresFinancials(type)`. Inputs use the new token-based CSS. Inline error pattern preserved. |
-| `BrowsePage` | New shell. Filter sidebar exposes both date pairs: "Invoice Date from/to" (financial filter) and "Upload Date from/to" (always applies). Table uses the new structure with type chips, density, and the responsive collapse rule. Type dropdown lists all 10 types. Table columns: Name, Type, Invoice Date, Upload Date, Amount, View — Invoice Date / Amount render `—` for rows where they're NULL. |
-| `ReceiptDetailPage` | Renamed to `DocumentDetailPage`. Financial rows hidden for non-financial types. Download / Delete actions unchanged. |
-| Global | New `client/src/App.tsx` adds the ShellBar + sub-bar wrappers around the React Router outlet. Browser tab title set via the route. |
+| Page                | Phase 1 changes                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `UploadPage`        | New shell. Form field set conditionally rendered via `requiresFinancials(type)`. Inputs use the new token-based CSS. Inline error pattern preserved.                                                                                                                                                                                                                                                   |
+| `BrowsePage`        | New shell. Filter sidebar exposes both date pairs: "Invoice Date from/to" (financial filter) and "Upload Date from/to" (always applies). Table uses the new structure with type chips, density, and the responsive collapse rule. Type dropdown lists all 10 types. Table columns: Name, Type, Invoice Date, Upload Date, Amount, View — Invoice Date / Amount render `—` for rows where they're NULL. |
+| `ReceiptDetailPage` | Renamed to `DocumentDetailPage`. Financial rows hidden for non-financial types. Download / Delete actions unchanged.                                                                                                                                                                                                                                                                                   |
+| Global              | New `client/src/App.tsx` adds the ShellBar + sub-bar wrappers around the React Router outlet. Browser tab title set via the route.                                                                                                                                                                                                                                                                     |
 
 ### Why this stack
 
@@ -336,16 +336,16 @@ END;
 
 ### Test plan
 
-| Layer | Changes |
-|---|---|
-| `shared/schemas.test.ts` | Discriminated-union cases: invoice w/ financials passes; invoice missing `amount` fails; contract w/o financials passes; contract w/ optional financials populated passes. `DocumentCreateSchema` **rejects** a client-supplied `documentDate` (or silently strips it — pick one and lock it in the test). Direct unit test for `requiresFinancials(type)`. `ListQuerySchema` accepts the four date params independently. |
-| `server/test/migrations.test.ts` | Populated `receipts` → after migration `documents` has same rows; each migrated row's `document_date` equals `substr(created_at, 1, 10)`; `invoice_date` is preserved verbatim; FTS index searchable. Fresh DB → `documents` exists with 10-value CHECK constraint and both date indexes present. **Idempotency:** run migrations twice, assert FTS row count equals document row count (no duplicates). |
-| `server/test/fileStore.test.ts` | `derivePath` parameter renamed to `createdAt`; path derives from upload-time year/month for both financial and non-financial types. Existing assertions update to use a `createdAt` ISO string in place of `invoiceDate`. |
-| `server/test/documentsRepo.test.ts` (renamed) | All existing repo tests carry over; field names updated; `document_date` populated by repo `insert`. New tests: (a) contract with NULL `invoice_date` is excluded when an `invoiceDateFrom`/`invoiceDateTo` range is set; (b) the same contract is **included** under an `uploadDateFrom`/`uploadDateTo` range covering its upload day; (c) combining both filters narrows correctly. |
-| `server/test/upload.test.ts` | Route updated. New: contract with no financial fields → 201, response `documentDate` set to today, `invoiceDate` null. Invoice missing `amount` → 400 `VALIDATION` with `fields.amount` populated. On-disk path assertions read year/month from `createdAt` instead of the (now removed) `invoice_date`. |
-| `list.test.ts`, `detail-and-download.test.ts`, `delete.test.ts` | Route rename; path assertions switch to `createdAt`-derived year/month. |
-| `e2e/*.spec.ts` | Labels updated (`Invoice Date` → `Document Date`). New `golden-path-contract.spec.ts`: upload contract, financial fields never rendered, detail page omits financial rows. |
-| `client/src/components/Dropzone.test.tsx`, `client/src/api.test.ts` | API URL updates. |
+| Layer                                                               | Changes                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shared/schemas.test.ts`                                            | Discriminated-union cases: invoice w/ financials passes; invoice missing `amount` fails; contract w/o financials passes; contract w/ optional financials populated passes. `DocumentCreateSchema` **rejects** a client-supplied `documentDate` (or silently strips it — pick one and lock it in the test). Direct unit test for `requiresFinancials(type)`. `ListQuerySchema` accepts the four date params independently. |
+| `server/test/migrations.test.ts`                                    | Populated `receipts` → after migration `documents` has same rows; each migrated row's `document_date` equals `substr(created_at, 1, 10)`; `invoice_date` is preserved verbatim; FTS index searchable. Fresh DB → `documents` exists with 10-value CHECK constraint and both date indexes present. **Idempotency:** run migrations twice, assert FTS row count equals document row count (no duplicates).                  |
+| `server/test/fileStore.test.ts`                                     | `derivePath` parameter renamed to `createdAt`; path derives from upload-time year/month for both financial and non-financial types. Existing assertions update to use a `createdAt` ISO string in place of `invoiceDate`.                                                                                                                                                                                                 |
+| `server/test/documentsRepo.test.ts` (renamed)                       | All existing repo tests carry over; field names updated; `document_date` populated by repo `insert`. New tests: (a) contract with NULL `invoice_date` is excluded when an `invoiceDateFrom`/`invoiceDateTo` range is set; (b) the same contract is **included** under an `uploadDateFrom`/`uploadDateTo` range covering its upload day; (c) combining both filters narrows correctly.                                     |
+| `server/test/upload.test.ts`                                        | Route updated. New: contract with no financial fields → 201, response `documentDate` set to today, `invoiceDate` null. Invoice missing `amount` → 400 `VALIDATION` with `fields.amount` populated. On-disk path assertions read year/month from `createdAt` instead of the (now removed) `invoice_date`.                                                                                                                  |
+| `list.test.ts`, `detail-and-download.test.ts`, `delete.test.ts`     | Route rename; path assertions switch to `createdAt`-derived year/month.                                                                                                                                                                                                                                                                                                                                                   |
+| `e2e/*.spec.ts`                                                     | Labels updated (`Invoice Date` → `Document Date`). New `golden-path-contract.spec.ts`: upload contract, financial fields never rendered, detail page omits financial rows.                                                                                                                                                                                                                                                |
+| `client/src/components/Dropzone.test.tsx`, `client/src/api.test.ts` | API URL updates.                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ### Coverage target
 

@@ -1,7 +1,11 @@
 import { Router, type Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
-import { DocumentCreateSchema, ListQuerySchema, type DocumentDTO } from '../../../shared/schemas.js';
+import {
+  DocumentCreateSchema,
+  ListQuerySchema,
+  type DocumentDTO,
+} from '../../../shared/schemas.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { uploadMiddleware, sniffOrThrow, multerErrorAsApiError } from '../middleware/upload.js';
 import type { createDocumentsRepo } from '../db/documentsRepo.js';

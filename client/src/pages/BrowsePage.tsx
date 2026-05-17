@@ -36,7 +36,12 @@ function FilterPanel(props: {
   return (
     <>
       <label htmlFor="filter-search">Search</label>
-      <input id="filter-search" value={props.q} onChange={(e) => props.setQ(e.target.value)} style={{ width: '100%' }} />
+      <input
+        id="filter-search"
+        value={props.q}
+        onChange={(e) => props.setQ(e.target.value)}
+        style={{ width: '100%' }}
+      />
 
       <label htmlFor="filter-type">Type</label>
       <select
@@ -174,14 +179,38 @@ export function BrowsePage() {
       <SubBar
         title="Browse Documents"
         actions={
-          <Link to="/" className="fi-primary" style={{ padding: '6px 12px', borderRadius: 'var(--fi-radius)', color: 'white', background: 'var(--fi-accent)' }}>
+          <Link
+            to="/"
+            className="fi-primary"
+            style={{
+              padding: '6px 12px',
+              borderRadius: 'var(--fi-radius)',
+              color: 'white',
+              background: 'var(--fi-accent)',
+            }}
+          >
             + Upload
           </Link>
         }
       />
       <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '240px 1fr', gap: 16 }}>
-        <aside className="fi-sidebar" style={{ background: 'var(--fi-surface)', border: '1px solid var(--fi-line)', borderRadius: 'var(--fi-radius)', padding: 12 }}>
-          <h3 style={{ margin: 0, fontSize: 13, textTransform: 'uppercase', color: 'var(--fi-ink-soft)' }}>
+        <aside
+          className="fi-sidebar"
+          style={{
+            background: 'var(--fi-surface)',
+            border: '1px solid var(--fi-line)',
+            borderRadius: 'var(--fi-radius)',
+            padding: 12,
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 13,
+              textTransform: 'uppercase',
+              color: 'var(--fi-ink-soft)',
+            }}
+          >
             Filter
           </h3>
           <FilterPanel {...filterProps} />
@@ -190,7 +219,14 @@ export function BrowsePage() {
           <FilterPanel {...filterProps} />
         </FilterDrawer>
         <section>
-          <h3 style={{ margin: '0 0 12px', fontSize: 13, textTransform: 'uppercase', color: 'var(--fi-ink-soft)' }}>
+          <h3
+            style={{
+              margin: '0 0 12px',
+              fontSize: 13,
+              textTransform: 'uppercase',
+              color: 'var(--fi-ink-soft)',
+            }}
+          >
             Documents ({total})
           </h3>
           {loading && <p>Loading…</p>}

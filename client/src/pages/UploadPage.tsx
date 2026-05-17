@@ -108,7 +108,13 @@ export function UploadPage() {
         }}
       >
         {file ? (
-          <div style={{ padding: 12, background: 'var(--fi-accent-dim)', borderRadius: 'var(--fi-radius)' }}>
+          <div
+            style={{
+              padding: 12,
+              background: 'var(--fi-accent-dim)',
+              borderRadius: 'var(--fi-radius)',
+            }}
+          >
             Selected: <strong>{file.name}</strong>{' '}
             <button type="button" onClick={() => setFile(null)}>
               Change
@@ -171,7 +177,9 @@ export function UploadPage() {
                   placeholder="0.00"
                   required
                 />
-                {fieldErrors.amountMajor && <p style={{ color: '#c00' }}>{fieldErrors.amountMajor}</p>}
+                {fieldErrors.amountMajor && (
+                  <p style={{ color: '#c00' }}>{fieldErrors.amountMajor}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="upload-currency">Currency</label>

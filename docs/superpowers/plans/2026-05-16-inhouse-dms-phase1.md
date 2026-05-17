@@ -16,40 +16,40 @@
 
 **New files**
 
-| Path | Responsibility |
-|---|---|
-| `migrations/002_rename_to_documents.sql` | Idempotent migration: creates `documents`, indexes, FTS, triggers; backfills from `receipts`; drops legacy tables. |
-| `server/src/db/documentsRepo.ts` | Replaces `receiptsRepo.ts`. CRUD + list with dual date filters. |
-| `server/src/routes/documents.ts` | Replaces `routes/receipts.ts`. Server-sets `document_date` at insert. |
-| `client/src/styles/tokens.css` | CSS custom properties for the Fiori palette + chip styles + base resets. |
-| `client/src/components/ShellBar.tsx` | Top dark bar with app title + search + avatar. |
-| `client/src/components/SubBar.tsx` | White breadcrumb/actions bar between ShellBar and content. |
-| `client/src/components/TypeChip.tsx` | Renders a single document-type chip with the color mapping. |
-| `client/src/components/FilterDrawer.tsx` | Mobile (<768px) slide-out wrapper around the BrowsePage filter panel. |
-| `client/src/pages/DocumentDetailPage.tsx` | Replaces `ReceiptDetailPage.tsx`. Conditional financial rows. |
-| `e2e/golden-path-contract.spec.ts` | Non-financial flow: upload contract → financial fields never render → detail page omits financial rows. |
+| Path                                      | Responsibility                                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `migrations/002_rename_to_documents.sql`  | Idempotent migration: creates `documents`, indexes, FTS, triggers; backfills from `receipts`; drops legacy tables. |
+| `server/src/db/documentsRepo.ts`          | Replaces `receiptsRepo.ts`. CRUD + list with dual date filters.                                                    |
+| `server/src/routes/documents.ts`          | Replaces `routes/receipts.ts`. Server-sets `document_date` at insert.                                              |
+| `client/src/styles/tokens.css`            | CSS custom properties for the Fiori palette + chip styles + base resets.                                           |
+| `client/src/components/ShellBar.tsx`      | Top dark bar with app title + search + avatar.                                                                     |
+| `client/src/components/SubBar.tsx`        | White breadcrumb/actions bar between ShellBar and content.                                                         |
+| `client/src/components/TypeChip.tsx`      | Renders a single document-type chip with the color mapping.                                                        |
+| `client/src/components/FilterDrawer.tsx`  | Mobile (<768px) slide-out wrapper around the BrowsePage filter panel.                                              |
+| `client/src/pages/DocumentDetailPage.tsx` | Replaces `ReceiptDetailPage.tsx`. Conditional financial rows.                                                      |
+| `e2e/golden-path-contract.spec.ts`        | Non-financial flow: upload contract → financial fields never render → detail page omits financial rows.            |
 
 **Modified files**
 
-| Path | Change |
-|---|---|
-| `shared/schemas.ts` | Full rewrite to Document* types, discriminated union, `REQUIRES_FINANCIALS`, `requiresFinancials`, dual-date `ListQuerySchema`. |
-| `shared/schemas.test.ts` | Re-write to cover the new schema shape. |
-| `server/src/app.ts` | Mount path `/api/receipts` → `/api/documents`; import names. |
-| `server/src/index.ts` | Symbol rename only. |
-| `server/src/storage/fileStore.ts` | Rename `invoiceDate` parameter to `createdAt` across all five functions. |
-| `server/test/helpers.ts` | Use `createDocumentsRepo`; same fixtures. |
-| `server/test/*.test.ts` | Route + field renames; new dual-date assertions; FTS idempotency test. |
-| `client/src/main.tsx` | Import `./styles/tokens.css`. |
-| `client/src/App.tsx` | Wrap routes in ShellBar + SubBar; update route paths to `/documents/:id`. |
-| `client/src/api.ts` | Endpoints → `/api/documents`; DTO types; dual date params. |
-| `client/src/types.ts` | Unchanged (re-export of `@shared/schemas`). |
-| `client/src/pages/UploadPage.tsx` | Conditional fields, new shell styling, financial-state persistence on type switch. |
-| `client/src/pages/BrowsePage.tsx` | Dual date filters, type chips, table columns, mobile FilterDrawer integration. |
-| `client/src/api.test.ts` | URL updates. |
-| `e2e/*.spec.ts` | Label updates (`Invoice Date` still appears for financials; new `Document Date` shown read-only). |
-| `README.md` | Rebrand text. |
-| `package.json` | `description` → "Inhouse DMS". |
+| Path                              | Change                                                                                                                           |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `shared/schemas.ts`               | Full rewrite to Document\* types, discriminated union, `REQUIRES_FINANCIALS`, `requiresFinancials`, dual-date `ListQuerySchema`. |
+| `shared/schemas.test.ts`          | Re-write to cover the new schema shape.                                                                                          |
+| `server/src/app.ts`               | Mount path `/api/receipts` → `/api/documents`; import names.                                                                     |
+| `server/src/index.ts`             | Symbol rename only.                                                                                                              |
+| `server/src/storage/fileStore.ts` | Rename `invoiceDate` parameter to `createdAt` across all five functions.                                                         |
+| `server/test/helpers.ts`          | Use `createDocumentsRepo`; same fixtures.                                                                                        |
+| `server/test/*.test.ts`           | Route + field renames; new dual-date assertions; FTS idempotency test.                                                           |
+| `client/src/main.tsx`             | Import `./styles/tokens.css`.                                                                                                    |
+| `client/src/App.tsx`              | Wrap routes in ShellBar + SubBar; update route paths to `/documents/:id`.                                                        |
+| `client/src/api.ts`               | Endpoints → `/api/documents`; DTO types; dual date params.                                                                       |
+| `client/src/types.ts`             | Unchanged (re-export of `@shared/schemas`).                                                                                      |
+| `client/src/pages/UploadPage.tsx` | Conditional fields, new shell styling, financial-state persistence on type switch.                                               |
+| `client/src/pages/BrowsePage.tsx` | Dual date filters, type chips, table columns, mobile FilterDrawer integration.                                                   |
+| `client/src/api.test.ts`          | URL updates.                                                                                                                     |
+| `e2e/*.spec.ts`                   | Label updates (`Invoice Date` still appears for financials; new `Document Date` shown read-only).                                |
+| `README.md`                       | Rebrand text.                                                                                                                    |
+| `package.json`                    | `description` → "Inhouse DMS".                                                                                                   |
 
 **Removed files**
 
@@ -80,6 +80,7 @@
 ### Task 1: Migration 002 — rename to documents (idempotent)
 
 **Files:**
+
 - Create: `migrations/002_rename_to_documents.sql`
 - Test: `server/test/migrations.test.ts` (overhaul)
 
@@ -111,9 +112,10 @@ describe('migrations', () => {
   it('fresh DB has documents table with 10-value type CHECK + both date indexes', () => {
     runMigrations(db);
 
-    const cols = db
-      .prepare(`PRAGMA table_info(documents)`)
-      .all() as Array<{ name: string; notnull: number }>;
+    const cols = db.prepare(`PRAGMA table_info(documents)`).all() as Array<{
+      name: string;
+      notnull: number;
+    }>;
     const colNames = cols.map((c) => c.name);
     expect(colNames).toEqual(
       expect.arrayContaining([
@@ -192,7 +194,10 @@ describe('migrations', () => {
 
     const row = db
       .prepare(`SELECT document_date, invoice_date FROM documents WHERE id = ?`)
-      .get('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') as { document_date: string; invoice_date: string };
+      .get('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') as {
+      document_date: string;
+      invoice_date: string;
+    };
     expect(row.document_date).toBe('2026-01-20');
     expect(row.invoice_date).toBe('2026-01-15');
   });
@@ -234,6 +239,7 @@ describe('migrations', () => {
 ```
 npm test -- server/test/migrations.test.ts
 ```
+
 Expected: FAIL — table `documents` does not exist / `002_rename_to_documents.sql` missing.
 
 - [ ] **Step 3: Create the migration file**
@@ -301,6 +307,7 @@ Why the migration runner's lexicographic order works for idempotency: `001_init.
 ```
 npm test -- server/test/migrations.test.ts
 ```
+
 Expected: PASS (3 tests).
 
 - [ ] **Step 5: Commit**
@@ -315,6 +322,7 @@ git commit -m "feat(db): add documents table migration with FTS idempotency"
 ### Task 2: Shared schemas — Document types + discriminated union + requiresFinancials
 
 **Files:**
+
 - Modify: `shared/schemas.ts`
 - Test: `shared/schemas.test.ts`
 
@@ -463,6 +471,7 @@ describe('ListQuerySchema', () => {
 ```
 npm test -- shared/schemas.test.ts
 ```
+
 Expected: FAIL — `DocumentCreateSchema`, `requiresFinancials`, etc. not exported.
 
 - [ ] **Step 3: Rewrite `shared/schemas.ts`**
@@ -579,6 +588,7 @@ export type ErrorEnvelope = z.infer<typeof ErrorEnvelopeSchema>;
 ```
 
 Notes for the implementing engineer:
+
 - `z.object` strips unknown keys by default, which is why the "client-supplied documentDate is dropped" test passes.
 - `z.discriminatedUnion` gives nice field-level errors like `fields.amount` automatically through the existing `errorHandler.ts` because zod's `ZodError.flatten()` is what `errorHandler` already consumes.
 
@@ -587,6 +597,7 @@ Notes for the implementing engineer:
 ```
 npm test -- shared/schemas.test.ts
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -603,6 +614,7 @@ git commit -m "feat(shared): Document* schemas with discriminated-union financia
 ### Task 3: FileStore — invoiceDate parameter renamed to createdAt
 
 **Files:**
+
 - Modify: `server/src/storage/fileStore.ts`
 - Test: `server/test/fileStore.test.ts`
 
@@ -699,6 +711,7 @@ describe('fileStore', () => {
 ```
 npm test -- server/test/fileStore.test.ts
 ```
+
 Expected: PASS for any tests that happen to still match (parsing first 7 chars works for both `YYYY-MM-DD` and `YYYY-MM-DDTHH…`), but the engineer's job is to rename the parameter for readability — the test file's variable rename is the actual change driver.
 
 Even if the test passes now, proceed to Step 3 so the parameter name is correct.
@@ -761,6 +774,7 @@ The slice math (`[0..4]` and `[5..7]`) works identically for `2026-03-15` and `2
 ```
 npm test -- server/test/fileStore.test.ts
 ```
+
 Expected: PASS (7 tests).
 
 - [ ] **Step 5: Commit**
@@ -775,6 +789,7 @@ git commit -m "refactor(server): rename FileStore date param to createdAt"
 ### Task 4: documentsRepo — rename, dual date filters, nullable financials
 
 **Files:**
+
 - Create: `server/src/db/documentsRepo.ts`
 - Delete: `server/src/db/receiptsRepo.ts`
 - Create: `server/test/documentsRepo.test.ts`
@@ -854,15 +869,34 @@ describe('documentsRepo', () => {
   });
 
   it('list orders by document_date DESC then created_at DESC', () => {
-    repo.insert({ ...baseInvoice, id: 'a'.repeat(8) + '-1111-4111-8111-111111111111', documentDate: '2026-01-01' });
-    repo.insert({ ...baseInvoice, id: 'b'.repeat(8) + '-1111-4111-8111-111111111111', documentDate: '2026-03-01' });
+    repo.insert({
+      ...baseInvoice,
+      id: 'a'.repeat(8) + '-1111-4111-8111-111111111111',
+      documentDate: '2026-01-01',
+    });
+    repo.insert({
+      ...baseInvoice,
+      id: 'b'.repeat(8) + '-1111-4111-8111-111111111111',
+      documentDate: '2026-03-01',
+    });
     const { items } = repo.list({ page: 1, pageSize: 20 });
     expect(items[0]?.documentDate).toBe('2026-03-01');
   });
 
   it('list filters by type across the new enum', () => {
-    repo.insert({ ...baseInvoice, id: 'c'.repeat(8) + '-1111-4111-8111-111111111111', type: 'policy', invoiceDate: null, amount: null, currency: null });
-    repo.insert({ ...baseInvoice, id: 'd'.repeat(8) + '-1111-4111-8111-111111111111', type: 'invoice' });
+    repo.insert({
+      ...baseInvoice,
+      id: 'c'.repeat(8) + '-1111-4111-8111-111111111111',
+      type: 'policy',
+      invoiceDate: null,
+      amount: null,
+      currency: null,
+    });
+    repo.insert({
+      ...baseInvoice,
+      id: 'd'.repeat(8) + '-1111-4111-8111-111111111111',
+      type: 'invoice',
+    });
     expect(repo.list({ type: 'policy', page: 1, pageSize: 20 }).total).toBe(1);
     expect(repo.list({ type: 'invoice', page: 1, pageSize: 20 }).total).toBe(1);
   });
@@ -870,7 +904,12 @@ describe('documentsRepo', () => {
   it('invoiceDateFrom/To excludes rows with NULL invoice_date', () => {
     repo.insert(baseInvoice);
     repo.insert(baseContract);
-    const r = repo.list({ invoiceDateFrom: '2026-01-01', invoiceDateTo: '2026-12-31', page: 1, pageSize: 20 });
+    const r = repo.list({
+      invoiceDateFrom: '2026-01-01',
+      invoiceDateTo: '2026-12-31',
+      page: 1,
+      pageSize: 20,
+    });
     expect(r.total).toBe(1);
     expect(r.items[0]?.id).toBe(baseInvoice.id);
   });
@@ -878,7 +917,12 @@ describe('documentsRepo', () => {
   it('uploadDateFrom/To filters on document_date and includes non-financial rows', () => {
     repo.insert(baseInvoice);
     repo.insert(baseContract);
-    const r = repo.list({ uploadDateFrom: '2026-02-01', uploadDateTo: '2026-02-28', page: 1, pageSize: 20 });
+    const r = repo.list({
+      uploadDateFrom: '2026-02-01',
+      uploadDateTo: '2026-02-28',
+      page: 1,
+      pageSize: 20,
+    });
     expect(r.total).toBe(1);
     expect(r.items[0]?.id).toBe(baseContract.id);
   });
@@ -905,7 +949,11 @@ describe('documentsRepo', () => {
 
   it('list searches FTS by q across new schema', () => {
     repo.insert({ ...baseInvoice, documentName: 'AWS January' });
-    repo.insert({ ...baseInvoice, id: 'f'.repeat(8) + '-1111-4111-8111-111111111111', documentName: 'GitHub bill' });
+    repo.insert({
+      ...baseInvoice,
+      id: 'f'.repeat(8) + '-1111-4111-8111-111111111111',
+      documentName: 'GitHub bill',
+    });
     const r = repo.list({ q: 'AWS', page: 1, pageSize: 20 });
     expect(r.total).toBe(1);
   });
@@ -932,6 +980,7 @@ describe('documentsRepo', () => {
 ```
 npm test -- server/test/documentsRepo.test.ts
 ```
+
 Expected: FAIL — `createDocumentsRepo` not exported / module missing.
 
 - [ ] **Step 3: Create `server/src/db/documentsRepo.ts`**
@@ -1090,6 +1139,7 @@ git rm server/src/db/receiptsRepo.ts server/test/receiptsRepo.test.ts
 ```
 npm test -- server/test/documentsRepo.test.ts
 ```
+
 Expected: PASS (10 tests).
 
 - [ ] **Step 6: Commit**
@@ -1104,6 +1154,7 @@ git commit -m "feat(server): documentsRepo with dual date filters and nullable f
 ### Task 5: /api/documents route
 
 **Files:**
+
 - Create: `server/src/routes/documents.ts`
 - Delete: `server/src/routes/receipts.ts`
 - Modify: `server/test/upload.test.ts`
@@ -1186,10 +1237,7 @@ describe('POST /api/documents', () => {
     const today = new Date().toISOString().slice(0, 10);
     const res = await request(env.app)
       .post('/api/documents')
-      .field(
-        'metadata',
-        JSON.stringify({ ...validInvoice, documentDate: '2099-12-31' }),
-      )
+      .field('metadata', JSON.stringify({ ...validInvoice, documentDate: '2099-12-31' }))
       .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
     expect(res.status).toBe(201);
     expect(res.body.documentDate).toBe(today);
@@ -1242,13 +1290,13 @@ describe('POST /api/documents', () => {
 
 For each, run the following sed-like replacements (the engineer should do these via Edit tool for safety, file-by-file):
 
-| Old | New |
-|---|---|
-| `/api/receipts` | `/api/documents` |
-| `receipt` (URL/route context only) | `document` |
-| `dateFrom` (query param) | `uploadDateFrom` if the test was filtering by upload date, else `invoiceDateFrom` |
-| `dateTo` | `uploadDateTo` / `invoiceDateTo` accordingly |
-| Path assertions reading year/month from `invoiceDate` | use the row's `createdAt` slice `[0..4]/[5..7]` |
+| Old                                                   | New                                                                               |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `/api/receipts`                                       | `/api/documents`                                                                  |
+| `receipt` (URL/route context only)                    | `document`                                                                        |
+| `dateFrom` (query param)                              | `uploadDateFrom` if the test was filtering by upload date, else `invoiceDateFrom` |
+| `dateTo`                                              | `uploadDateTo` / `invoiceDateTo` accordingly                                      |
+| Path assertions reading year/month from `invoiceDate` | use the row's `createdAt` slice `[0..4]/[5..7]`                                   |
 
 For `list.test.ts` specifically: add a new test exercising the dual filter:
 
@@ -1268,6 +1316,7 @@ it('filters by uploadDate independently of invoiceDate', async () => {
 ```
 npm test -- server/test/upload.test.ts
 ```
+
 Expected: FAIL — route `/api/documents` not yet mounted (still `/api/receipts`).
 
 - [ ] **Step 4: Create `server/src/routes/documents.ts`**
@@ -1276,7 +1325,11 @@ Expected: FAIL — route `/api/documents` not yet mounted (still `/api/receipts`
 import { Router, type Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
-import { DocumentCreateSchema, ListQuerySchema, type DocumentDTO } from '../../../shared/schemas.js';
+import {
+  DocumentCreateSchema,
+  ListQuerySchema,
+  type DocumentDTO,
+} from '../../../shared/schemas.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { uploadMiddleware, sniffOrThrow, multerErrorAsApiError } from '../middleware/upload.js';
 import type { createDocumentsRepo } from '../db/documentsRepo.js';
@@ -1432,6 +1485,7 @@ git commit -m "feat(server): /api/documents route with server-assigned documentD
 ### Task 6: App wiring + test helpers + server index — back to GREEN
 
 **Files:**
+
 - Modify: `server/src/app.ts`
 - Modify: `server/src/index.ts`
 - Modify: `server/test/helpers.ts`
@@ -1596,6 +1650,7 @@ export function makeTestEnv(opts: MakeTestEnvOptions = {}) {
 ```
 npm test -- server/test/
 ```
+
 Expected: PASS (all server suites).
 
 - [ ] **Step 5: Run typecheck**
@@ -1603,6 +1658,7 @@ Expected: PASS (all server suites).
 ```
 npx tsc -p tsconfig.server.json --noEmit
 ```
+
 Expected: clean.
 
 - [ ] **Step 6: Commit**
@@ -1617,6 +1673,7 @@ git commit -m "refactor(server): wire /api/documents and rename helpers"
 ### Task 7: Client api.ts — endpoints, DTO types, dual date params
 
 **Files:**
+
 - Modify: `client/src/api.ts`
 - Modify: `client/src/api.test.ts`
 
@@ -1693,6 +1750,7 @@ describe('api', () => {
 ```
 npm test -- client/src/api.test.ts
 ```
+
 Expected: FAIL — URLs still point at `/api/receipts`, `ListQuery` shape mismatch.
 
 - [ ] **Step 3: Edit `client/src/api.ts`**
@@ -1795,6 +1853,7 @@ export const api = {
 ```
 npm test -- client/src/api.test.ts
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1809,6 +1868,7 @@ git commit -m "feat(client): api client targets /api/documents with dual date fi
 ### Task 8: Visual system — tokens.css + ShellBar + SubBar + TypeChip + App.tsx
 
 **Files:**
+
 - Create: `client/src/styles/tokens.css`
 - Create: `client/src/components/ShellBar.tsx`
 - Create: `client/src/components/SubBar.tsx`
@@ -1840,7 +1900,12 @@ body {
   padding: 0;
   background: var(--fi-bg);
   color: var(--fi-ink);
-  font-family: '72', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family:
+    '72',
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 14px;
 }
 
@@ -2105,6 +2170,7 @@ git commit -m "feat(client): Fiori visual system + ShellBar/SubBar/TypeChip"
 ### Task 9: UploadPage — conditional fields, defaults persistence, new shell
 
 **Files:**
+
 - Modify: `client/src/pages/UploadPage.tsx`
 
 - [ ] **Step 1: Rewrite `client/src/pages/UploadPage.tsx`**
@@ -2220,7 +2286,13 @@ export function UploadPage() {
         }}
       >
         {file ? (
-          <div style={{ padding: 12, background: 'var(--fi-accent-dim)', borderRadius: 'var(--fi-radius)' }}>
+          <div
+            style={{
+              padding: 12,
+              background: 'var(--fi-accent-dim)',
+              borderRadius: 'var(--fi-radius)',
+            }}
+          >
             Selected: <strong>{file.name}</strong>{' '}
             <button type="button" onClick={() => setFile(null)}>
               Change
@@ -2283,7 +2355,9 @@ export function UploadPage() {
                   placeholder="0.00"
                   required
                 />
-                {fieldErrors.amountMajor && <p style={{ color: '#c00' }}>{fieldErrors.amountMajor}</p>}
+                {fieldErrors.amountMajor && (
+                  <p style={{ color: '#c00' }}>{fieldErrors.amountMajor}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="upload-currency">Currency</label>
@@ -2342,6 +2416,7 @@ git commit -m "feat(client): conditional financial fields on UploadPage"
 ### Task 10: BrowsePage — dual date filters, table, type chips, mobile drawer
 
 **Files:**
+
 - Create: `client/src/components/FilterDrawer.tsx`
 - Modify: `client/src/pages/BrowsePage.tsx`
 
@@ -2494,7 +2569,12 @@ function FilterPanel(props: {
   return (
     <>
       <label htmlFor="filter-search">Search</label>
-      <input id="filter-search" value={props.q} onChange={(e) => props.setQ(e.target.value)} style={{ width: '100%' }} />
+      <input
+        id="filter-search"
+        value={props.q}
+        onChange={(e) => props.setQ(e.target.value)}
+        style={{ width: '100%' }}
+      />
 
       <label htmlFor="filter-type">Type</label>
       <select
@@ -2632,14 +2712,38 @@ export function BrowsePage() {
       <SubBar
         title="Browse Documents"
         actions={
-          <Link to="/" className="fi-primary" style={{ padding: '6px 12px', borderRadius: 'var(--fi-radius)', color: 'white', background: 'var(--fi-accent)' }}>
+          <Link
+            to="/"
+            className="fi-primary"
+            style={{
+              padding: '6px 12px',
+              borderRadius: 'var(--fi-radius)',
+              color: 'white',
+              background: 'var(--fi-accent)',
+            }}
+          >
             + Upload
           </Link>
         }
       />
       <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '240px 1fr', gap: 16 }}>
-        <aside className="fi-sidebar" style={{ background: 'var(--fi-surface)', border: '1px solid var(--fi-line)', borderRadius: 'var(--fi-radius)', padding: 12 }}>
-          <h3 style={{ margin: 0, fontSize: 13, textTransform: 'uppercase', color: 'var(--fi-ink-soft)' }}>
+        <aside
+          className="fi-sidebar"
+          style={{
+            background: 'var(--fi-surface)',
+            border: '1px solid var(--fi-line)',
+            borderRadius: 'var(--fi-radius)',
+            padding: 12,
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 13,
+              textTransform: 'uppercase',
+              color: 'var(--fi-ink-soft)',
+            }}
+          >
             Filter
           </h3>
           <FilterPanel {...filterProps} />
@@ -2648,7 +2752,14 @@ export function BrowsePage() {
           <FilterPanel {...filterProps} />
         </FilterDrawer>
         <section>
-          <h3 style={{ margin: '0 0 12px', fontSize: 13, textTransform: 'uppercase', color: 'var(--fi-ink-soft)' }}>
+          <h3
+            style={{
+              margin: '0 0 12px',
+              fontSize: 13,
+              textTransform: 'uppercase',
+              color: 'var(--fi-ink-soft)',
+            }}
+          >
             Documents ({total})
           </h3>
           {loading && <p>Loading…</p>}
@@ -2720,6 +2831,7 @@ git commit -m "feat(client): BrowsePage with dual date filters and Fiori table"
 ### Task 11: DocumentDetailPage — rename + conditional financial rows
 
 **Files:**
+
 - Create: `client/src/pages/DocumentDetailPage.tsx`
 - Delete: `client/src/pages/ReceiptDetailPage.tsx`
 
@@ -2853,6 +2965,7 @@ git rm client/src/pages/ReceiptDetailPage.tsx
 npm test -- client/
 npx tsc -p tsconfig.client.json --noEmit
 ```
+
 Expected: PASS, clean.
 
 - [ ] **Step 4: Verify in browser**
@@ -2860,7 +2973,9 @@ Expected: PASS, clean.
 ```
 npm run dev
 ```
+
 Visit `http://localhost:5173` and exercise:
+
 - Upload an invoice → financial fields visible, defaults today + THB. After submit, redirected to `/documents/:id` with all financial rows shown.
 - Upload a contract → financial fields hidden. After submit, detail page omits invoice/amount rows; `Document Date` row visible.
 - Browse: confirm both date filter pairs work; type chips render with color mapping; mobile width (<768px) shows the gear button and collapses the side panel.
@@ -2877,6 +2992,7 @@ git commit -m "feat(client): DocumentDetailPage with conditional financial rows"
 ### Task 12: E2E + rebrand cleanup
 
 **Files:**
+
 - Modify: `e2e/golden-path.spec.ts`
 - Modify: `e2e/filter.spec.ts`
 - Modify: `e2e/search.spec.ts`
@@ -2967,6 +3083,7 @@ npx playwright test
 npx tsc -p tsconfig.server.json --noEmit
 npx tsc -p tsconfig.client.json --noEmit
 ```
+
 Expected: all PASS / clean.
 
 - [ ] **Step 5: Commit**

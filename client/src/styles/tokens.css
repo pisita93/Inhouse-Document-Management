@@ -17,7 +17,12 @@ body {
   padding: 0;
   background: var(--fi-bg);
   color: var(--fi-ink);
-  font-family: '72', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family:
+    '72',
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 14px;
 }
 
