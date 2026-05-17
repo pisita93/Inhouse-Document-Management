@@ -5,7 +5,7 @@ import { type Express } from 'express';
 import { buildApp } from '../src/app.js';
 import { openDatabase, type DB } from '../src/db/connection.js';
 import { runMigrations } from '../src/db/migrations.js';
-import { createReceiptsRepo } from '../src/db/receiptsRepo.js';
+import { createDocumentsRepo } from '../src/db/documentsRepo.js';
 import { createFileStore } from '../src/storage/fileStore.js';
 
 const PNG_1x1 = Buffer.from(
@@ -24,12 +24,12 @@ export interface MakeTestEnvOptions {
 }
 
 export function makeTestEnv(opts: MakeTestEnvOptions = {}) {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'receipts-it-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dms-it-'));
   fs.mkdirSync(path.join(tmp, 'db'), { recursive: true });
   fs.mkdirSync(path.join(tmp, 'file'), { recursive: true });
-  const db: DB = openDatabase(path.join(tmp, 'db', 'receipts.db'));
+  const db: DB = openDatabase(path.join(tmp, 'db', 'documents.db'));
   runMigrations(db);
-  const repo = createReceiptsRepo(db);
+  const repo = createDocumentsRepo(db);
   const store = createFileStore(path.join(tmp, 'file'));
   const app: Express = buildApp({ repo, store, testResetEnabled: opts.testResetEnabled });
   return {

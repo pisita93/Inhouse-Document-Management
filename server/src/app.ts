@@ -2,13 +2,13 @@ import express, { type Express } from 'express';
 import { pinoHttp } from 'pino-http';
 import { logger } from './logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { receiptsRouter } from './routes/receipts.js';
+import { documentsRouter } from './routes/documents.js';
 import { healthRouter } from './routes/health.js';
-import type { createReceiptsRepo } from './db/receiptsRepo.js';
+import type { createDocumentsRepo } from './db/documentsRepo.js';
 import type { FileStore } from './storage/fileStore.js';
 
 export interface AppDeps {
-  repo: ReturnType<typeof createReceiptsRepo>;
+  repo: ReturnType<typeof createDocumentsRepo>;
   store: FileStore;
   staticDir?: string;
   testResetEnabled?: boolean;
@@ -30,7 +30,7 @@ export function buildApp(deps: AppDeps): Express {
       }
     });
   }
-  app.use('/api/receipts', receiptsRouter(deps));
+  app.use('/api/documents', documentsRouter(deps));
   if (deps.staticDir) {
     app.use(express.static(deps.staticDir));
     app.get('*', (_req, res) => res.sendFile('index.html', { root: deps.staticDir }));

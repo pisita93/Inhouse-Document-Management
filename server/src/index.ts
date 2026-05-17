@@ -3,7 +3,7 @@ import { loadConfig } from './config.js';
 import { logger } from './logger.js';
 import { openDatabase } from './db/connection.js';
 import { runMigrations } from './db/migrations.js';
-import { createReceiptsRepo } from './db/receiptsRepo.js';
+import { createDocumentsRepo } from './db/documentsRepo.js';
 import { createFileStore } from './storage/fileStore.js';
 import { buildApp } from './app.js';
 import path from 'node:path';
@@ -24,7 +24,7 @@ function main(): void {
 
   const db = openDatabase(cfg.dbPath);
   runMigrations(db);
-  const repo = createReceiptsRepo(db);
+  const repo = createDocumentsRepo(db);
   const store = createFileStore(cfg.fileRoot);
 
   const staticDir = path.resolve(process.cwd(), 'client/dist');
