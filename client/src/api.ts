@@ -1,4 +1,4 @@
-import type { ReceiptCreate, ReceiptDTO, ListQuery } from './types.js';
+import type { DocumentCreate, DocumentDTO, ListQuery } from './types.js';
 
 export interface ApiErrorShape {
   code: string;
@@ -19,7 +19,6 @@ export class ApiClientError extends Error implements ApiErrorShape {
 
 async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   const doFetch = () => fetch(input, init);
-
   let res = await doFetch();
   if (res.status === 503) {
     const body = await res
@@ -48,8 +47,10 @@ async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
 function buildQuery(q: Partial<ListQuery>): string {
   const sp = new URLSearchParams();
   if (q.type) sp.set('type', q.type);
-  if (q.dateFrom) sp.set('dateFrom', q.dateFrom);
-  if (q.dateTo) sp.set('dateTo', q.dateTo);
+  if (q.invoiceDateFrom) sp.set('invoiceDateFrom', q.invoiceDateFrom);
+  if (q.invoiceDateTo) sp.set('invoiceDateTo', q.invoiceDateTo);
+  if (q.uploadDateFrom) sp.set('uploadDateFrom', q.uploadDateFrom);
+  if (q.uploadDateTo) sp.set('uploadDateTo', q.uploadDateTo);
   if (q.q) sp.set('q', q.q);
   if (q.page) sp.set('page', String(q.page));
   if (q.pageSize) sp.set('pageSize', String(q.pageSize));
@@ -58,29 +59,29 @@ function buildQuery(q: Partial<ListQuery>): string {
 }
 
 export const api = {
-  async upload(file: File, meta: ReceiptCreate): Promise<ReceiptDTO> {
+  async upload(file: File, meta: DocumentCreate): Promise<DocumentDTO> {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('metadata', JSON.stringify(meta));
-    return request<ReceiptDTO>('/api/receipts', { method: 'POST', body: fd });
+    return request<DocumentDTO>('/api/documents', { method: 'POST', body: fd });
   },
 
   async list(q: Partial<ListQuery>) {
-    return request<{ items: ReceiptDTO[]; total: number; page: number; pageSize: number }>(
-      `/api/receipts${buildQuery(q)}`,
+    return request<{ items: DocumentDTO[]; total: number; page: number; pageSize: number }>(
+      `/api/documents${buildQuery(q)}`,
     );
   },
 
-  async getById(id: string): Promise<ReceiptDTO> {
-    return request<ReceiptDTO>(`/api/receipts/${id}`);
+  async getById(id: string): Promise<DocumentDTO> {
+    return request<DocumentDTO>(`/api/documents/${id}`);
   },
 
   fileUrl(id: string): string {
-    return `/api/receipts/${id}/file`;
+    return `/api/documents/${id}/file`;
   },
 
   async remove(id: string): Promise<void> {
-    const res = await fetch(`/api/receipts/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/documents/${id}`, { method: 'DELETE' });
     if (!res.ok && res.status !== 204) {
       const body = await res.json().catch(() => ({ error: { code: 'INTERNAL', message: '' } }));
       throw new ApiClientError(body.error.code, body.error.message);
