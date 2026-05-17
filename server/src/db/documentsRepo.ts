@@ -1,13 +1,14 @@
 import type { DB } from './connection.js';
-import type { ReceiptDTO, ReceiptType, Currency, ListQuery } from '../../../shared/schemas.js';
+import type { DocumentDTO, DocumentType, Currency, ListQuery } from '../../../shared/schemas.js';
 
-interface ReceiptRow {
+interface DocumentRow {
   id: string;
   document_name: string;
-  type: ReceiptType;
-  invoice_date: string;
-  amount: number;
-  currency: Currency;
+  type: DocumentType;
+  document_date: string;
+  invoice_date: string | null;
+  amount: number | null;
+  currency: Currency | null;
   note: string | null;
   filename: string;
   original_name: string;
@@ -16,11 +17,12 @@ interface ReceiptRow {
   created_at: string;
 }
 
-function rowToDTO(r: ReceiptRow): ReceiptDTO {
+function rowToDTO(r: DocumentRow): DocumentDTO {
   return {
     id: r.id,
     documentName: r.document_name,
     type: r.type,
+    documentDate: r.document_date,
     invoiceDate: r.invoice_date,
     amount: r.amount,
     currency: r.currency,
@@ -34,63 +36,72 @@ function rowToDTO(r: ReceiptRow): ReceiptDTO {
 }
 
 export interface ListResult {
-  items: ReceiptDTO[];
+  items: DocumentDTO[];
   total: number;
   page: number;
   pageSize: number;
 }
 
-export function createReceiptsRepo(db: DB) {
+export function createDocumentsRepo(db: DB) {
   const insertStmt = db.prepare(`
-    INSERT INTO receipts (
-      id, document_name, type, invoice_date, amount, currency, note,
+    INSERT INTO documents (
+      id, document_name, type, document_date, invoice_date, amount, currency, note,
       filename, original_name, mime_type, size_bytes, created_at
     ) VALUES (
-      @id, @documentName, @type, @invoiceDate, @amount, @currency, @note,
+      @id, @documentName, @type, @documentDate, @invoiceDate, @amount, @currency, @note,
       @filename, @originalName, @mimeType, @sizeBytes, @createdAt
     )
   `);
 
-  const getStmt = db.prepare(`SELECT * FROM receipts WHERE id = ?`);
-  const deleteStmt = db.prepare(`DELETE FROM receipts WHERE id = ?`);
+  const getStmt = db.prepare(`SELECT * FROM documents WHERE id = ?`);
+  const deleteStmt = db.prepare(`DELETE FROM documents WHERE id = ?`);
 
   function buildListSQL(q: ListQuery): { sql: string; countSQL: string; params: unknown[] } {
     const where: string[] = [];
     const params: unknown[] = [];
-    let fromClause = 'FROM receipts r';
-    let orderBy = 'ORDER BY r.invoice_date DESC, r.created_at DESC';
+    let fromClause = 'FROM documents d';
+    let orderBy = 'ORDER BY d.document_date DESC, d.created_at DESC';
 
     if (q.q) {
-      fromClause += ' JOIN receipts_fts f ON f.rowid = r.rowid';
-      where.push('f.receipts_fts MATCH ?');
+      fromClause += ' JOIN documents_fts f ON f.rowid = d.rowid';
+      where.push('f.documents_fts MATCH ?');
       params.push(`${q.q.replace(/["*]/g, '')}*`);
-      orderBy = 'ORDER BY bm25(receipts_fts)';
+      orderBy = 'ORDER BY bm25(documents_fts)';
     }
     if (q.type) {
-      where.push('r.type = ?');
+      where.push('d.type = ?');
       params.push(q.type);
     }
-    if (q.dateFrom) {
-      where.push('r.invoice_date >= ?');
-      params.push(q.dateFrom);
+    if (q.invoiceDateFrom) {
+      where.push('d.invoice_date >= ?');
+      params.push(q.invoiceDateFrom);
     }
-    if (q.dateTo) {
-      where.push('r.invoice_date <= ?');
-      params.push(q.dateTo);
+    if (q.invoiceDateTo) {
+      where.push('d.invoice_date <= ?');
+      params.push(q.invoiceDateTo);
+    }
+    if (q.uploadDateFrom) {
+      where.push('d.document_date >= ?');
+      params.push(q.uploadDateFrom);
+    }
+    if (q.uploadDateTo) {
+      where.push('d.document_date <= ?');
+      params.push(q.uploadDateTo);
     }
 
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
-    const sql = `SELECT r.* ${fromClause} ${whereClause} ${orderBy} LIMIT ? OFFSET ?`;
+    const sql = `SELECT d.* ${fromClause} ${whereClause} ${orderBy} LIMIT ? OFFSET ?`;
     const countSQL = `SELECT COUNT(*) AS c ${fromClause} ${whereClause}`;
     return { sql, countSQL, params };
   }
 
   return {
-    insert(dto: ReceiptDTO): void {
+    insert(dto: DocumentDTO): void {
       insertStmt.run({
         id: dto.id,
         documentName: dto.documentName,
         type: dto.type,
+        documentDate: dto.documentDate,
         invoiceDate: dto.invoiceDate,
         amount: dto.amount,
         currency: dto.currency,
@@ -103,26 +114,25 @@ export function createReceiptsRepo(db: DB) {
       });
     },
 
-    getById(id: string): ReceiptDTO | null {
-      const row = getStmt.get(id) as ReceiptRow | undefined;
+    getById(id: string): DocumentDTO | null {
+      const row = getStmt.get(id) as DocumentRow | undefined;
       return row ? rowToDTO(row) : null;
     },
 
     list(q: ListQuery): ListResult {
       const { sql, countSQL, params } = buildListSQL(q);
       const offset = (q.page - 1) * q.pageSize;
-      const rows = db.prepare(sql).all(...params, q.pageSize, offset) as ReceiptRow[];
+      const rows = db.prepare(sql).all(...params, q.pageSize, offset) as DocumentRow[];
       const total = (db.prepare(countSQL).get(...params) as { c: number }).c;
       return { items: rows.map(rowToDTO), total, page: q.page, pageSize: q.pageSize };
     },
 
     delete(id: string): boolean {
-      const info = deleteStmt.run(id);
-      return info.changes > 0;
+      return deleteStmt.run(id).changes > 0;
     },
 
     reset(): void {
-      db.prepare('DELETE FROM receipts').run();
+      db.prepare('DELETE FROM documents').run();
     },
   };
 }
