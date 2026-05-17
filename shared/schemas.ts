@@ -1,37 +1,95 @@
 import { z } from 'zod';
 
-export const RECEIPT_TYPES = ['invoice', 'receipt', 'quotation', 'other'] as const;
-export const CURRENCIES = ['THB', 'USD', 'EUR', 'JPY', 'CNY'] as const;
+export const DOCUMENT_TYPES = [
+  'invoice',
+  'receipt',
+  'quotation',
+  'contract',
+  'policy',
+  'hr_document',
+  'meeting_minutes',
+  'report',
+  'certificate',
+  'other',
+] as const;
+export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
-export type ReceiptType = (typeof RECEIPT_TYPES)[number];
+export const CURRENCIES = ['THB', 'USD', 'EUR', 'JPY', 'CNY'] as const;
 export type Currency = (typeof CURRENCIES)[number];
+
+export const REQUIRES_FINANCIALS = new Set<DocumentType>(['invoice', 'receipt']);
+
+export function requiresFinancials(type: DocumentType): boolean {
+  return REQUIRES_FINANCIALS.has(type);
+}
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be YYYY-MM-DD');
 
-export const ReceiptCreateSchema = z.object({
-  documentName: z.string().min(1).max(200),
-  type: z.enum(RECEIPT_TYPES),
+const FinancialFields = {
   invoiceDate: isoDate,
   amount: z.number().int().nonnegative(),
   currency: z.enum(CURRENCIES),
-  note: z.string().max(2000).optional(),
-});
-export type ReceiptCreate = z.infer<typeof ReceiptCreateSchema>;
+};
 
-export const ReceiptDTOSchema = ReceiptCreateSchema.extend({
+const baseFields = {
+  documentName: z.string().min(1).max(200),
+  note: z.string().max(2000).optional(),
+};
+
+const financialVariants = (['invoice', 'receipt'] as const).map((t) =>
+  z.object({
+    ...baseFields,
+    type: z.literal(t),
+    ...FinancialFields,
+  }),
+);
+
+const nonFinancialTypes = DOCUMENT_TYPES.filter(
+  (t) => !REQUIRES_FINANCIALS.has(t),
+) as ReadonlyArray<Exclude<DocumentType, 'invoice' | 'receipt'>>;
+
+const nonFinancialVariants = nonFinancialTypes.map((t) =>
+  z.object({
+    ...baseFields,
+    type: z.literal(t),
+    invoiceDate: isoDate.optional(),
+    amount: z.number().int().nonnegative().optional(),
+    currency: z.enum(CURRENCIES).optional(),
+  }),
+);
+
+export const DocumentCreateSchema = z.discriminatedUnion('type', [
+  ...financialVariants,
+  ...nonFinancialVariants,
+] as unknown as readonly [
+  (typeof financialVariants)[number],
+  ...(typeof financialVariants | typeof nonFinancialVariants)[number][],
+]);
+export type DocumentCreate = z.infer<typeof DocumentCreateSchema>;
+
+export const DocumentDTOSchema = z.object({
   id: z.string().uuid(),
+  documentName: z.string(),
+  type: z.enum(DOCUMENT_TYPES),
+  documentDate: isoDate,
+  invoiceDate: isoDate.nullable(),
+  amount: z.number().int().nonnegative().nullable(),
+  currency: z.enum(CURRENCIES).nullable(),
+  note: z.string().optional(),
   filename: z.string(),
   originalName: z.string(),
   mimeType: z.string(),
   sizeBytes: z.number().int().nonnegative(),
   createdAt: z.string(),
 });
-export type ReceiptDTO = z.infer<typeof ReceiptDTOSchema>;
+export type DocumentDTO = z.infer<typeof DocumentDTOSchema>;
 
 export const ListQuerySchema = z.object({
-  type: z.enum(RECEIPT_TYPES).optional(),
-  dateFrom: isoDate.optional(),
-  dateTo: isoDate.optional(),
+  type: z.enum(DOCUMENT_TYPES).optional(),
+  invoiceDateFrom: isoDate.optional(),
+  invoiceDateTo: isoDate.optional(),
+  uploadDateFrom: isoDate.optional(),
+  uploadDateTo: isoDate.optional(),
   q: z.string().min(1).max(200).optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),
