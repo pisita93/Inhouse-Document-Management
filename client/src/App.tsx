@@ -1,21 +1,23 @@
-import { Routes, Route, NavLink } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import { UploadPage } from './pages/UploadPage.js';
 import { BrowsePage } from './pages/BrowsePage.js';
-import { ReceiptDetailPage } from './pages/ReceiptDetailPage.js';
+import { DocumentDetailPage } from './pages/DocumentDetailPage.js';
+import { ShellBar } from './components/ShellBar.js';
 
 export function App() {
+  useEffect(() => {
+    document.title = 'Inhouse DMS';
+  }, []);
+
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif' }}>
-      <header style={{ padding: 12, borderBottom: '1px solid #ddd', display: 'flex', gap: 16 }}>
-        <strong>Receipts</strong>
-        <NavLink to="/">Upload</NavLink>
-        <NavLink to="/browse">Browse</NavLink>
-      </header>
+    <div>
+      <ShellBar />
       <main>
         <Routes>
           <Route path="/" element={<UploadPage />} />
           <Route path="/browse" element={<BrowsePage />} />
-          <Route path="/receipts/:id" element={<ReceiptDetailPage />} />
+          <Route path="/documents/:id" element={<DocumentDetailPage />} />
         </Routes>
       </main>
     </div>
