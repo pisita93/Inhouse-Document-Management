@@ -1,14 +1,14 @@
 import { Router, type Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
-import { ReceiptCreateSchema, ListQuerySchema, type ReceiptDTO } from '../../../shared/schemas.js';
+import { DocumentCreateSchema, ListQuerySchema, type DocumentDTO } from '../../../shared/schemas.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { uploadMiddleware, sniffOrThrow, multerErrorAsApiError } from '../middleware/upload.js';
-import type { createReceiptsRepo } from '../db/receiptsRepo.js';
+import type { createDocumentsRepo } from '../db/documentsRepo.js';
 import type { FileStore } from '../storage/fileStore.js';
 
 interface Deps {
-  repo: ReturnType<typeof createReceiptsRepo>;
+  repo: ReturnType<typeof createDocumentsRepo>;
   store: FileStore;
 }
 
@@ -23,7 +23,7 @@ function parseMetadata(raw: unknown): unknown {
   }
 }
 
-export function receiptsRouter(deps: Deps): Router {
+export function documentsRouter(deps: Deps): Router {
   const { repo, store } = deps;
   const r = Router();
 
@@ -38,19 +38,26 @@ export function receiptsRouter(deps: Deps): Router {
         if (!file) throw new ApiError(400, 'VALIDATION', 'file is required');
 
         const rawMeta = parseMetadata((req.body as Record<string, unknown>).metadata);
-        const meta = ReceiptCreateSchema.parse(rawMeta);
+        const meta = DocumentCreateSchema.parse(rawMeta);
 
         const { mime, ext } = await sniffOrThrow(file.buffer);
 
         const id = uuidv4();
         const now = new Date().toISOString();
+        const today = now.slice(0, 10);
         const filename = `${id}.${ext}`;
 
-        await store.write(id, ext, meta.invoiceDate, file.buffer);
+        await store.write(id, ext, now, file.buffer);
 
-        const dto: ReceiptDTO = {
+        const dto: DocumentDTO = {
           id,
-          ...meta,
+          documentName: meta.documentName,
+          type: meta.type,
+          documentDate: today,
+          invoiceDate: 'invoiceDate' in meta ? (meta.invoiceDate ?? null) : null,
+          amount: 'amount' in meta ? (meta.amount ?? null) : null,
+          currency: 'currency' in meta ? (meta.currency ?? null) : null,
+          note: meta.note,
           filename,
           originalName: file.originalname,
           mimeType: mime,
@@ -61,7 +68,7 @@ export function receiptsRouter(deps: Deps): Router {
         try {
           repo.insert(dto);
         } catch (e) {
-          await store.unlink(id, ext, meta.invoiceDate);
+          await store.unlink(id, ext, now);
           throw e;
         }
 
@@ -85,7 +92,7 @@ export function receiptsRouter(deps: Deps): Router {
     try {
       const id = req.params.id ?? '';
       const dto = repo.getById(id);
-      if (!dto) throw new ApiError(404, 'NOT_FOUND', 'receipt not found');
+      if (!dto) throw new ApiError(404, 'NOT_FOUND', 'document not found');
       res.json(dto);
     } catch (e) {
       next(e);
@@ -96,9 +103,9 @@ export function receiptsRouter(deps: Deps): Router {
     try {
       const id = req.params.id ?? '';
       const dto = repo.getById(id);
-      if (!dto) throw new ApiError(404, 'NOT_FOUND', 'receipt not found');
+      if (!dto) throw new ApiError(404, 'NOT_FOUND', 'document not found');
       const ext = path.extname(dto.filename).slice(1);
-      if (!store.exists(id, ext, dto.invoiceDate)) {
+      if (!store.exists(id, ext, dto.createdAt)) {
         throw new ApiError(410, 'FILE_GONE', 'file is no longer in storage');
       }
       res.setHeader('Content-Type', dto.mimeType);
@@ -106,7 +113,7 @@ export function receiptsRouter(deps: Deps): Router {
         'Content-Disposition',
         `attachment; filename="${dto.originalName.replace(/"/g, '')}"`,
       );
-      store.openStream(id, ext, dto.invoiceDate).pipe(res);
+      store.openStream(id, ext, dto.createdAt).pipe(res);
     } catch (e) {
       next(e);
     }
@@ -116,10 +123,10 @@ export function receiptsRouter(deps: Deps): Router {
     try {
       const id = req.params.id ?? '';
       const dto = repo.getById(id);
-      if (!dto) throw new ApiError(404, 'NOT_FOUND', 'receipt not found');
+      if (!dto) throw new ApiError(404, 'NOT_FOUND', 'document not found');
       const ext = path.extname(dto.filename).slice(1);
       repo.delete(id);
-      await store.unlink(id, ext, dto.invoiceDate);
+      await store.unlink(id, ext, dto.createdAt);
       res.status(204).end();
     } catch (e) {
       next(e);

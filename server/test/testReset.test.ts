@@ -14,9 +14,9 @@ describe('POST /api/test/reset', () => {
       env = makeTestEnv({ testResetEnabled: true });
     });
 
-    it('returns 200 and wipes receipts + files', async () => {
+    it('returns 200 and wipes documents + files', async () => {
       const upload = await request(env.app)
-        .post('/api/receipts')
+        .post('/api/documents')
         .field(
           'metadata',
           JSON.stringify({
@@ -29,7 +29,9 @@ describe('POST /api/test/reset', () => {
         )
         .attach('file', env.fixtures.PDF_MIN, 'wipe.pdf');
       expect(upload.status).toBe(201);
-      const onDisk = path.join(env.tmp, 'file', '2026', '05', `${upload.body.id}.pdf`);
+      const yyyy = upload.body.createdAt.slice(0, 4);
+      const mm = upload.body.createdAt.slice(5, 7);
+      const onDisk = path.join(env.tmp, 'file', yyyy, mm, `${upload.body.id}.pdf`);
       expect(fs.existsSync(onDisk)).toBe(true);
 
       const res = await request(env.app).post('/api/test/reset');

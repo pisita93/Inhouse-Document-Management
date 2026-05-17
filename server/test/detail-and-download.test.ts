@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { makeTestEnv } from './helpers.js';
 
-describe('GET /api/receipts/:id and :id/file', () => {
+describe('GET /api/documents/:id and :id/file', () => {
   let env: ReturnType<typeof makeTestEnv>;
 
   beforeEach(() => {
@@ -14,7 +14,7 @@ describe('GET /api/receipts/:id and :id/file', () => {
 
   async function uploadAndGetId(): Promise<string> {
     const res = await request(env.app)
-      .post('/api/receipts')
+      .post('/api/documents')
       .field(
         'metadata',
         JSON.stringify({
@@ -29,22 +29,22 @@ describe('GET /api/receipts/:id and :id/file', () => {
     return res.body.id;
   }
 
-  it('returns metadata for an existing receipt', async () => {
+  it('returns metadata for an existing document', async () => {
     const id = await uploadAndGetId();
-    const res = await request(env.app).get(`/api/receipts/${id}`);
+    const res = await request(env.app).get(`/api/documents/${id}`);
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(id);
   });
 
   it('404 for unknown id', async () => {
-    const res = await request(env.app).get('/api/receipts/00000000-0000-4000-8000-000000000000');
+    const res = await request(env.app).get('/api/documents/00000000-0000-4000-8000-000000000000');
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 
   it('streams file with Content-Disposition', async () => {
     const id = await uploadAndGetId();
-    const res = await request(env.app).get(`/api/receipts/${id}/file`);
+    const res = await request(env.app).get(`/api/documents/${id}/file`);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/pdf/);
     expect(res.headers['content-disposition']).toMatch(/orig\.pdf/);
@@ -54,8 +54,10 @@ describe('GET /api/receipts/:id and :id/file', () => {
   it('returns 410 FILE_GONE if DB row exists but file is missing', async () => {
     const id = await uploadAndGetId();
     const dto = env.repo.getById(id)!;
-    fs.unlinkSync(path.join(env.tmp, 'file', '2026', '01', dto.filename));
-    const res = await request(env.app).get(`/api/receipts/${id}/file`);
+    const yyyy = dto.createdAt.slice(0, 4);
+    const mm = dto.createdAt.slice(5, 7);
+    fs.unlinkSync(path.join(env.tmp, 'file', yyyy, mm, dto.filename));
+    const res = await request(env.app).get(`/api/documents/${id}/file`);
     expect(res.status).toBe(410);
     expect(res.body.error.code).toBe('FILE_GONE');
   });
