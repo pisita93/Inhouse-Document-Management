@@ -1,5 +1,6 @@
 {
   "name": "inhouse-document-management",
+  "description": "Inhouse DMS — internal document management for a small company",
   "private": true,
   "version": "0.1.0",
   "type": "module",

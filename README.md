@@ -1,6 +1,7 @@
 # Inhouse Document Management
 
-LAN-only receipt management system for a small office.
+Inhouse DMS — internal document management for a small company.
+LAN-only document store covering invoices, receipts, contracts, HR documents, and more.
 Built with Node.js, Express, React, SQLite (FTS5).
 Deployed via Portainer on a Synology NAS.
 

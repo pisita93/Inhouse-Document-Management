@@ -1,7 +1,7 @@
 import { test, expect } from './test-helpers';
 import path from 'node:path';
 
-test('upload → browse → detail → download', async ({ page }) => {
+test('upload → browse → detail → download (invoice)', async ({ page }) => {
   await page.goto('/');
 
   await page.setInputFiles('input[type=file]', path.resolve('e2e/fixtures/sample.pdf'));
@@ -10,12 +10,12 @@ test('upload → browse → detail → download', async ({ page }) => {
   await page.getByLabel('Invoice Date').fill('2026-04-15');
   await page.getByLabel('Amount').fill('199.99');
 
-  await page.getByRole('button', { name: /Upload to NAS/ }).click();
+  await page.getByRole('button', { name: /^Upload$/ }).click();
 
   await expect(page.locator('h2', { hasText: 'E2E Test Doc' })).toBeVisible();
   await expect(page.locator('text=199.99 THB')).toBeVisible();
 
-  await page.getByRole('link', { name: 'Browse' }).click();
+  await page.goto('/browse');
   await expect(page.locator('text=E2E Test Doc')).toBeVisible();
 
   const detailLink = page.getByRole('link', { name: 'View' });
