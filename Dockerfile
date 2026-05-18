@@ -1,6 +1,7 @@
 # --- Stage 1: build client ---
 FROM node:20-alpine AS client-build
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm ci
 COPY tsconfig.base.json tsconfig.client.json vite.config.ts ./
@@ -11,6 +12,7 @@ RUN npm run build:client
 # --- Stage 2: build server ---
 FROM node:20-alpine AS server-build
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm ci
 COPY tsconfig.base.json tsconfig.server.json ./
@@ -22,8 +24,10 @@ RUN npm run build:server
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev \
+  && apk del python3 make g++
 COPY migrations ./migrations
 COPY --from=server-build /app/server/dist ./server/dist
 COPY --from=server-build /app/shared ./shared
