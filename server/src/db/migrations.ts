@@ -44,9 +44,7 @@ export function runMigrations(db: DB, migrationsDir = MIGRATIONS_DIR): void {
     .readdirSync(migrationsDir)
     .filter((f) => f.endsWith('.sql'))
     .sort();
-  const recordStmt = db.prepare(
-    `INSERT INTO _migrations (filename, applied_at) VALUES (?, ?)`,
-  );
+  const recordStmt = db.prepare(`INSERT INTO _migrations (filename, applied_at) VALUES (?, ?)`);
   const txn = db.transaction(() => {
     const now = new Date().toISOString();
     for (const file of files) {
