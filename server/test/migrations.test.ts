@@ -111,6 +111,18 @@ describe('migrations', () => {
     expect(row.invoice_date).toBe('2026-01-15');
   });
 
+  it('reconciles ledger when schema drift leaves a non-idempotent migration unrecorded', () => {
+    runMigrations(db);
+    db.prepare(`DELETE FROM _migrations WHERE filename = '003_short_note.sql'`).run();
+
+    expect(() => runMigrations(db)).not.toThrow();
+
+    const ledger = db.prepare(`SELECT filename FROM _migrations`).all() as Array<{
+      filename: string;
+    }>;
+    expect(ledger.map((r) => r.filename)).toContain('003_short_note.sql');
+  });
+
   it('is idempotent: running twice produces no duplicate FTS rows', () => {
     runMigrations(db);
     db.prepare(
