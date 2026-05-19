@@ -34,6 +34,12 @@ a:hover {
   text-decoration: underline;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 button,
 input,
 select,
@@ -71,6 +77,26 @@ button.fi-primary:disabled {
 .fi-shellbar__brand {
   font-weight: 600;
   letter-spacing: 0.3px;
+}
+.fi-shellbar__nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+.fi-shellbar__nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  padding: 6px 12px;
+  border-radius: var(--fi-radius);
+  font-weight: 500;
+}
+.fi-shellbar__nav-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  color: white;
+}
+.fi-shellbar__nav-link--active {
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
 }
 .fi-shellbar__avatar {
   margin-left: auto;
