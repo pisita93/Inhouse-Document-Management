@@ -52,6 +52,7 @@ function buildQuery(q: Partial<ListQuery>): string {
   if (q.uploadDateFrom) sp.set('uploadDateFrom', q.uploadDateFrom);
   if (q.uploadDateTo) sp.set('uploadDateTo', q.uploadDateTo);
   if (q.q) sp.set('q', q.q);
+  if (q.shortNote) sp.set('shortNote', q.shortNote);
   if (q.page) sp.set('page', String(q.page));
   if (q.pageSize) sp.set('pageSize', String(q.pageSize));
   const s = sp.toString();

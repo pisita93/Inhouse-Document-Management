@@ -18,6 +18,7 @@ test('search filters by name', async ({ page }) => {
 
   await page.goto('/browse');
   await page.getByLabel('Search').fill('Beta');
+  await page.getByRole('button', { name: 'Apply' }).first().click();
 
   await expect(page.locator('text=Beta receipt')).toBeVisible();
   await expect(page.locator('text=Alpha receipt')).not.toBeVisible();

@@ -26,6 +26,7 @@ test('filter by type and invoice-date range', async ({ page }) => {
   await page.getByLabel('Type').selectOption('invoice');
   await page.getByLabel('Invoice Date from').fill('2026-05-01');
   await page.getByLabel('Invoice Date to').fill('2026-12-31');
+  await page.getByRole('button', { name: 'Apply' }).first().click();
 
   await expect(page.locator('text=Inv-B')).toBeVisible();
   await expect(page.locator('text=Inv-A')).not.toBeVisible();

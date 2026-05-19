@@ -33,6 +33,7 @@ const FinancialFields = {
 
 const baseFields = {
   documentName: z.string().min(1).max(200),
+  shortNote: z.string().max(30).optional(),
   note: z.string().max(2000).optional(),
 };
 
@@ -75,6 +76,7 @@ export const DocumentDTOSchema = z.object({
   invoiceDate: isoDate.nullable(),
   amount: z.number().int().nonnegative().nullable(),
   currency: z.enum(CURRENCIES).nullable(),
+  shortNote: z.string().optional(),
   note: z.string().optional(),
   filename: z.string(),
   originalName: z.string(),
@@ -91,6 +93,7 @@ export const ListQuerySchema = z.object({
   uploadDateFrom: isoDate.optional(),
   uploadDateTo: isoDate.optional(),
   q: z.string().min(1).max(200).optional(),
+  shortNote: z.string().min(1).max(60).optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),
 });

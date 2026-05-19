@@ -61,6 +61,7 @@ export function documentsRouter(deps: Deps): Router {
           invoiceDate: 'invoiceDate' in meta ? (meta.invoiceDate ?? null) : null,
           amount: 'amount' in meta ? (meta.amount ?? null) : null,
           currency: 'currency' in meta ? (meta.currency ?? null) : null,
+          shortNote: meta.shortNote,
           note: meta.note,
           filename,
           originalName: file.originalname,

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { SubBar } from '../components/SubBar.js';
@@ -19,35 +19,57 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   other: 'Other',
 };
 
-function FilterPanel(props: {
+interface FilterValues {
   q: string;
-  setQ: (v: string) => void;
   type: DocumentType | '';
-  setType: (v: DocumentType | '') => void;
+  shortNote: string;
   invoiceDateFrom: string;
-  setInvoiceDateFrom: (v: string) => void;
   invoiceDateTo: string;
-  setInvoiceDateTo: (v: string) => void;
   uploadDateFrom: string;
-  setUploadDateFrom: (v: string) => void;
   uploadDateTo: string;
-  setUploadDateTo: (v: string) => void;
-}): ReactNode {
+}
+
+const EMPTY_FILTERS: FilterValues = {
+  q: '',
+  type: '',
+  shortNote: '',
+  invoiceDateFrom: '',
+  invoiceDateTo: '',
+  uploadDateFrom: '',
+  uploadDateTo: '',
+};
+
+interface FilterPanelProps {
+  draft: FilterValues;
+  setDraft: (v: FilterValues) => void;
+  onApply: () => void;
+  onReset: () => void;
+}
+
+function FilterPanel({ draft, setDraft, onApply, onReset }: FilterPanelProps): ReactNode {
+  const update = <K extends keyof FilterValues>(key: K, value: FilterValues[K]) =>
+    setDraft({ ...draft, [key]: value });
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onApply();
+  };
+
   return (
-    <>
+    <form onSubmit={handleSubmit}>
       <label htmlFor="filter-search">Search</label>
       <input
         id="filter-search"
-        value={props.q}
-        onChange={(e) => props.setQ(e.target.value)}
+        value={draft.q}
+        onChange={(e) => update('q', e.target.value)}
         style={{ width: '100%' }}
       />
 
       <label htmlFor="filter-type">Type</label>
       <select
         id="filter-type"
-        value={props.type}
-        onChange={(e) => props.setType(e.target.value as DocumentType | '')}
+        value={draft.type}
+        onChange={(e) => update('type', e.target.value as DocumentType | '')}
         style={{ width: '100%' }}
       >
         <option value="">All</option>
@@ -58,20 +80,29 @@ function FilterPanel(props: {
         ))}
       </select>
 
+      <label htmlFor="filter-short-note">Short Note</label>
+      <input
+        id="filter-short-note"
+        value={draft.shortNote}
+        onChange={(e) => update('shortNote', e.target.value)}
+        placeholder="text or pattern with *"
+        style={{ width: '100%' }}
+      />
+
       <label htmlFor="filter-invoice-from">Invoice Date from</label>
       <input
         id="filter-invoice-from"
         type="date"
-        value={props.invoiceDateFrom}
-        onChange={(e) => props.setInvoiceDateFrom(e.target.value)}
+        value={draft.invoiceDateFrom}
+        onChange={(e) => update('invoiceDateFrom', e.target.value)}
         style={{ width: '100%' }}
       />
       <label htmlFor="filter-invoice-to">Invoice Date to</label>
       <input
         id="filter-invoice-to"
         type="date"
-        value={props.invoiceDateTo}
-        onChange={(e) => props.setInvoiceDateTo(e.target.value)}
+        value={draft.invoiceDateTo}
+        onChange={(e) => update('invoiceDateTo', e.target.value)}
         style={{ width: '100%' }}
       />
 
@@ -79,29 +110,34 @@ function FilterPanel(props: {
       <input
         id="filter-upload-from"
         type="date"
-        value={props.uploadDateFrom}
-        onChange={(e) => props.setUploadDateFrom(e.target.value)}
+        value={draft.uploadDateFrom}
+        onChange={(e) => update('uploadDateFrom', e.target.value)}
         style={{ width: '100%' }}
       />
       <label htmlFor="filter-upload-to">Upload Date to</label>
       <input
         id="filter-upload-to"
         type="date"
-        value={props.uploadDateTo}
-        onChange={(e) => props.setUploadDateTo(e.target.value)}
+        value={draft.uploadDateTo}
+        onChange={(e) => update('uploadDateTo', e.target.value)}
         style={{ width: '100%' }}
       />
-    </>
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <button type="submit" className="fi-primary" style={{ flex: 1 }}>
+          Apply
+        </button>
+        <button type="button" onClick={onReset}>
+          Reset
+        </button>
+      </div>
+    </form>
   );
 }
 
 export function BrowsePage() {
-  const [q, setQ] = useState('');
-  const [type, setType] = useState<DocumentType | ''>('');
-  const [invoiceDateFrom, setInvoiceDateFrom] = useState('');
-  const [invoiceDateTo, setInvoiceDateTo] = useState('');
-  const [uploadDateFrom, setUploadDateFrom] = useState('');
-  const [uploadDateTo, setUploadDateTo] = useState('');
+  const [draft, setDraft] = useState<FilterValues>(EMPTY_FILTERS);
+  const [applied, setApplied] = useState<FilterValues>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [items, setItems] = useState<DocumentDTO[]>([]);
@@ -115,12 +151,13 @@ export function BrowsePage() {
     setError(null);
     api
       .list({
-        q: q || undefined,
-        type: type || undefined,
-        invoiceDateFrom: invoiceDateFrom || undefined,
-        invoiceDateTo: invoiceDateTo || undefined,
-        uploadDateFrom: uploadDateFrom || undefined,
-        uploadDateTo: uploadDateTo || undefined,
+        q: applied.q || undefined,
+        type: applied.type || undefined,
+        shortNote: applied.shortNote || undefined,
+        invoiceDateFrom: applied.invoiceDateFrom || undefined,
+        invoiceDateTo: applied.invoiceDateTo || undefined,
+        uploadDateFrom: applied.uploadDateFrom || undefined,
+        uploadDateTo: applied.uploadDateTo || undefined,
         page,
         pageSize,
       })
@@ -137,62 +174,25 @@ export function BrowsePage() {
     return () => {
       cancelled = true;
     };
-  }, [q, type, invoiceDateFrom, invoiceDateTo, uploadDateFrom, uploadDateTo, page]);
+  }, [applied, page]);
 
   const lastPage = Math.max(1, Math.ceil(total / pageSize));
 
-  const filterProps = {
-    q,
-    setQ: (v: string) => {
-      setQ(v);
-      setPage(1);
-    },
-    type,
-    setType: (v: DocumentType | '') => {
-      setType(v);
-      setPage(1);
-    },
-    invoiceDateFrom,
-    setInvoiceDateFrom: (v: string) => {
-      setInvoiceDateFrom(v);
-      setPage(1);
-    },
-    invoiceDateTo,
-    setInvoiceDateTo: (v: string) => {
-      setInvoiceDateTo(v);
-      setPage(1);
-    },
-    uploadDateFrom,
-    setUploadDateFrom: (v: string) => {
-      setUploadDateFrom(v);
-      setPage(1);
-    },
-    uploadDateTo,
-    setUploadDateTo: (v: string) => {
-      setUploadDateTo(v);
-      setPage(1);
-    },
+  const onApply = () => {
+    setApplied(draft);
+    setPage(1);
   };
+  const onReset = () => {
+    setDraft(EMPTY_FILTERS);
+    setApplied(EMPTY_FILTERS);
+    setPage(1);
+  };
+
+  const filterProps: FilterPanelProps = { draft, setDraft, onApply, onReset };
 
   return (
     <>
-      <SubBar
-        title="Browse Documents"
-        actions={
-          <Link
-            to="/"
-            className="fi-primary"
-            style={{
-              padding: '6px 12px',
-              borderRadius: 'var(--fi-radius)',
-              color: 'white',
-              background: 'var(--fi-accent)',
-            }}
-          >
-            + Upload
-          </Link>
-        }
-      />
+      <SubBar title="Browse Documents" />
       <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '240px 1fr', gap: 16 }}>
         <aside
           className="fi-sidebar"
@@ -241,6 +241,7 @@ export function BrowsePage() {
               <tr>
                 <th>Name</th>
                 <th>Type</th>
+                <th>Short Note</th>
                 <th>Invoice Date</th>
                 <th>Upload Date</th>
                 <th style={{ textAlign: 'right' }}>Amount</th>
@@ -254,6 +255,7 @@ export function BrowsePage() {
                   <td>
                     <TypeChip type={d.type} />
                   </td>
+                  <td>{d.shortNote ?? '—'}</td>
                   <td>{d.invoiceDate ?? '—'}</td>
                   <td>{d.documentDate}</td>
                   <td style={{ textAlign: 'right' }}>

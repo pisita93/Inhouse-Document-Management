@@ -9,6 +9,7 @@ interface DocumentRow {
   invoice_date: string | null;
   amount: number | null;
   currency: Currency | null;
+  short_note: string | null;
   note: string | null;
   filename: string;
   original_name: string;
@@ -26,6 +27,7 @@ function rowToDTO(r: DocumentRow): DocumentDTO {
     invoiceDate: r.invoice_date,
     amount: r.amount,
     currency: r.currency,
+    shortNote: r.short_note ?? undefined,
     note: r.note ?? undefined,
     filename: r.filename,
     originalName: r.original_name,
@@ -42,13 +44,21 @@ export interface ListResult {
   pageSize: number;
 }
 
+function shortNoteToLike(pattern: string): string {
+  const escaped = pattern.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+  const withWildcards = escaped.replace(/\*/g, '%');
+  return withWildcards.includes('%') ? withWildcards : `%${withWildcards}%`;
+}
+
 export function createDocumentsRepo(db: DB) {
   const insertStmt = db.prepare(`
     INSERT INTO documents (
-      id, document_name, type, document_date, invoice_date, amount, currency, note,
+      id, document_name, type, document_date, invoice_date, amount, currency,
+      short_note, note,
       filename, original_name, mime_type, size_bytes, created_at
     ) VALUES (
-      @id, @documentName, @type, @documentDate, @invoiceDate, @amount, @currency, @note,
+      @id, @documentName, @type, @documentDate, @invoiceDate, @amount, @currency,
+      @shortNote, @note,
       @filename, @originalName, @mimeType, @sizeBytes, @createdAt
     )
   `);
@@ -88,6 +98,10 @@ export function createDocumentsRepo(db: DB) {
       where.push('d.document_date <= ?');
       params.push(q.uploadDateTo);
     }
+    if (q.shortNote) {
+      where.push("d.short_note LIKE ? ESCAPE '\\'");
+      params.push(shortNoteToLike(q.shortNote));
+    }
 
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const sql = `SELECT d.* ${fromClause} ${whereClause} ${orderBy} LIMIT ? OFFSET ?`;
@@ -105,6 +119,7 @@ export function createDocumentsRepo(db: DB) {
         invoiceDate: dto.invoiceDate,
         amount: dto.amount,
         currency: dto.currency,
+        shortNote: dto.shortNote ?? null,
         note: dto.note ?? null,
         filename: dto.filename,
         originalName: dto.originalName,

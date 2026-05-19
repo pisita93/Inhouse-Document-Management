@@ -39,6 +39,7 @@ export function UploadPage() {
     invoiceDate: todayISO(),
     amountMajor: '',
     currency: 'THB' as Currency,
+    shortNote: '',
     note: '',
   });
 
@@ -70,12 +71,14 @@ export function UploadPage() {
         invoiceDate: form.invoiceDate,
         amount: Math.round(amountNum * 100),
         currency: form.currency,
+        shortNote: form.shortNote || undefined,
         note: form.note || undefined,
       };
     } else {
       meta = {
         documentName: form.documentName,
         type: form.type as Exclude<DocumentType, 'invoice' | 'receipt'>,
+        shortNote: form.shortNote || undefined,
         note: form.note || undefined,
       };
     }
@@ -198,6 +201,17 @@ export function UploadPage() {
             </div>
           </div>
         )}
+
+        <label htmlFor="upload-short-note">Short Note</label>
+        <input
+          id="upload-short-note"
+          value={form.shortNote}
+          onChange={(e) => update('shortNote', e.target.value.slice(0, 30))}
+          maxLength={30}
+          placeholder="Up to 30 characters"
+          style={{ width: '100%' }}
+        />
+        {fieldErrors.shortNote && <p style={{ color: '#c00' }}>{fieldErrors.shortNote}</p>}
 
         <label htmlFor="upload-note">Note</label>
         <textarea
