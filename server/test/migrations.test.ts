@@ -18,7 +18,7 @@ describe('migrations', () => {
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
-  it('fresh DB has documents table with 10-value type CHECK + both date indexes', () => {
+  it('fresh DB has documents table with FK on type + both date indexes', () => {
     runMigrations(db);
 
     const cols = db.prepare(`PRAGMA table_info(documents)`).all() as Array<{
@@ -84,7 +84,7 @@ describe('migrations', () => {
           1,
           '2026-01-01T00:00:00.000Z',
         ),
-    ).toThrow(/CHECK constraint failed/);
+    ).toThrow(/FOREIGN KEY constraint failed/);
   });
 
   it('migrating populated receipts → documents backfills document_date from created_at', () => {
@@ -151,5 +151,110 @@ describe('migrations', () => {
     const docs = (db.prepare(`SELECT COUNT(*) AS c FROM documents`).get() as { c: number }).c;
     const fts = (db.prepare(`SELECT COUNT(*) AS c FROM documents_fts`).get() as { c: number }).c;
     expect(fts).toBe(docs);
+  });
+
+  describe('migration 004', () => {
+    it('creates document_types, categories, tags, document_tags and rebuilds documents without CHECK', () => {
+      runMigrations(db);
+
+      const tables = db
+        .prepare(`SELECT name FROM sqlite_master WHERE type='table' ORDER BY name`)
+        .all()
+        .map((r) => (r as { name: string }).name);
+      expect(tables).toEqual(
+        expect.arrayContaining([
+          '_migrations',
+          'categories',
+          'document_tags',
+          'document_types',
+          'documents',
+          'tags',
+        ]),
+      );
+
+      const typeCount = (
+        db.prepare(`SELECT COUNT(*) AS c FROM document_types`).get() as { c: number }
+      ).c;
+      expect(typeCount).toBe(10);
+
+      const flags = db
+        .prepare(`SELECT id, requires_financial FROM document_types ORDER BY id`)
+        .all() as Array<{ id: string; requires_financial: number }>;
+      expect(flags.find((r) => r.id === 'invoice')?.requires_financial).toBe(1);
+      expect(flags.find((r) => r.id === 'receipt')?.requires_financial).toBe(1);
+      expect(flags.find((r) => r.id === 'other')?.requires_financial).toBe(0);
+
+      const cols = db.prepare(`PRAGMA table_info(documents)`).all() as Array<{
+        name: string;
+        notnull: number;
+      }>;
+      expect(cols.find((c) => c.name === 'category_id')).toBeTruthy();
+      const fks = db.prepare(`PRAGMA foreign_key_list(documents)`).all() as Array<{
+        table: string;
+        from: string;
+        to: string;
+      }>;
+      expect(fks.some((f) => f.table === 'document_types' && f.from === 'type')).toBe(true);
+      expect(fks.some((f) => f.table === 'categories' && f.from === 'category_id')).toBe(true);
+
+      const ftsCols = db
+        .prepare(`SELECT name FROM pragma_table_info('documents_fts')`)
+        .all() as Array<{ name: string }>;
+      expect(ftsCols.map((c) => c.name)).toEqual(
+        expect.arrayContaining([
+          'document_name',
+          'note',
+          'short_note',
+          'tag_names',
+          'category_name',
+        ]),
+      );
+    });
+
+    it('accepts a row of every seeded type under the new schema', () => {
+      runMigrations(db);
+      const insert = db.prepare(`
+        INSERT INTO documents (id, document_name, type, category_id, document_date,
+          invoice_date, amount, currency, note, short_note, filename, original_name,
+          mime_type, size_bytes, created_at)
+        VALUES (?, ?, ?, NULL, '2026-05-21', NULL, NULL, NULL, NULL, NULL,
+          'f.pdf', 'f.pdf', 'application/pdf', 1, datetime('now'))
+      `);
+      const types = [
+        'invoice',
+        'receipt',
+        'quotation',
+        'contract',
+        'policy',
+        'hr_document',
+        'meeting_minutes',
+        'report',
+        'certificate',
+        'other',
+      ];
+      types.forEach((t, i) => {
+        insert.run(`doc-${i}`, `name-${t}`, t);
+      });
+
+      const count = (db.prepare(`SELECT COUNT(*) AS c FROM documents`).get() as { c: number }).c;
+      expect(count).toBe(10);
+
+      const ftsCount = (
+        db.prepare(`SELECT COUNT(*) AS c FROM documents_fts`).get() as { c: number }
+      ).c;
+      expect(ftsCount).toBe(10);
+    });
+
+    it('is idempotent — re-running 004 is a no-op for document_types', () => {
+      runMigrations(db);
+      const before = (
+        db.prepare(`SELECT COUNT(*) AS c FROM document_types`).get() as { c: number }
+      ).c;
+      runMigrations(db);
+      const after = (
+        db.prepare(`SELECT COUNT(*) AS c FROM document_types`).get() as { c: number }
+      ).c;
+      expect(after).toBe(before);
+    });
   });
 });
