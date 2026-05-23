@@ -6,6 +6,7 @@ import { runMigrations } from './db/migrations.js';
 import { createCategoriesRepo } from './db/categoriesRepo.js';
 import { createDocumentsRepo } from './db/documentsRepo.js';
 import { createDocumentTypesRepo } from './db/documentTypesRepo.js';
+import { createTagsRepo } from './db/tagsRepo.js';
 import { createFileStore } from './storage/fileStore.js';
 import { buildApp } from './app.js';
 import path from 'node:path';
@@ -29,6 +30,7 @@ function main(): void {
   const repo = createDocumentsRepo(db);
   const documentTypesRepo = createDocumentTypesRepo(db);
   const categoriesRepo = createCategoriesRepo(db);
+  const tagsRepo = createTagsRepo(db);
   const store = createFileStore(cfg.fileRoot);
 
   const staticDir = path.resolve(process.cwd(), 'client/dist');
@@ -36,6 +38,7 @@ function main(): void {
     repo,
     documentTypesRepo,
     categoriesRepo,
+    tagsRepo,
     store,
     staticDir: fs.existsSync(staticDir) ? staticDir : undefined,
     testResetEnabled: process.env.E2E_RESET_ENABLED === '1',

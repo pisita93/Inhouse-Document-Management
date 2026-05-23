@@ -168,3 +168,24 @@ export const CategoryPatchSchema = z.object({
   disabledAt: z.string().nullable().optional(),
 });
 export type CategoryPatch = z.infer<typeof CategoryPatchSchema>;
+
+export const TagNameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1)
+  .max(40)
+  .regex(/^[a-z0-9][a-z0-9 _-]*$/, 'letters, digits, space, _, - only');
+
+export const TagDTOSchema = z.object({
+  id: z.string().uuid(),
+  name: TagNameSchema,
+  createdAt: z.string(),
+});
+export type TagDTO = z.infer<typeof TagDTOSchema>;
+
+export const TagCreateSchema = z.object({ name: TagNameSchema });
+export type TagCreate = z.infer<typeof TagCreateSchema>;
+
+export const TagPatchSchema = z.object({ name: TagNameSchema });
+export type TagPatch = z.infer<typeof TagPatchSchema>;
