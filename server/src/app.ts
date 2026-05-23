@@ -2,9 +2,11 @@ import express, { type Express } from 'express';
 import { pinoHttp } from 'pino-http';
 import { logger } from './logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { categoriesRouter } from './routes/categories.js';
 import { documentsRouter } from './routes/documents.js';
 import { documentTypesRouter } from './routes/documentTypes.js';
 import { healthRouter } from './routes/health.js';
+import type { createCategoriesRepo } from './db/categoriesRepo.js';
 import type { createDocumentsRepo } from './db/documentsRepo.js';
 import type { createDocumentTypesRepo } from './db/documentTypesRepo.js';
 import type { FileStore } from './storage/fileStore.js';
@@ -12,6 +14,7 @@ import type { FileStore } from './storage/fileStore.js';
 export interface AppDeps {
   repo: ReturnType<typeof createDocumentsRepo>;
   documentTypesRepo: ReturnType<typeof createDocumentTypesRepo>;
+  categoriesRepo: ReturnType<typeof createCategoriesRepo>;
   store: FileStore;
   staticDir?: string;
   testResetEnabled?: boolean;
@@ -35,6 +38,7 @@ export function buildApp(deps: AppDeps): Express {
   }
   app.use('/api/documents', documentsRouter(deps));
   app.use('/api/document-types', documentTypesRouter({ repo: deps.documentTypesRepo }));
+  app.use('/api/categories', categoriesRouter({ repo: deps.categoriesRepo }));
   if (deps.staticDir) {
     app.use(express.static(deps.staticDir));
     app.get('*', (_req, res) => res.sendFile('index.html', { root: deps.staticDir }));

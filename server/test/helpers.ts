@@ -5,6 +5,7 @@ import { type Express } from 'express';
 import { buildApp } from '../src/app.js';
 import { openDatabase, type DB } from '../src/db/connection.js';
 import { runMigrations } from '../src/db/migrations.js';
+import { createCategoriesRepo } from '../src/db/categoriesRepo.js';
 import { createDocumentsRepo } from '../src/db/documentsRepo.js';
 import { createDocumentTypesRepo } from '../src/db/documentTypesRepo.js';
 import { createFileStore } from '../src/storage/fileStore.js';
@@ -32,10 +33,12 @@ export function makeTestEnv(opts: MakeTestEnvOptions = {}) {
   runMigrations(db);
   const repo = createDocumentsRepo(db);
   const documentTypesRepo = createDocumentTypesRepo(db);
+  const categoriesRepo = createCategoriesRepo(db);
   const store = createFileStore(path.join(tmp, 'file'));
   const app: Express = buildApp({
     repo,
     documentTypesRepo,
+    categoriesRepo,
     store,
     testResetEnabled: opts.testResetEnabled,
   });
@@ -44,6 +47,7 @@ export function makeTestEnv(opts: MakeTestEnvOptions = {}) {
     db,
     repo,
     documentTypesRepo,
+    categoriesRepo,
     store,
     app,
     cleanup() {

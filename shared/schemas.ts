@@ -144,3 +144,27 @@ export const DocumentTypePatchSchema = z
     path: ['requiresFinancial'],
   });
 export type DocumentTypePatch = z.infer<typeof DocumentTypePatchSchema>;
+
+export const CategoryNameSchema = z.string().trim().min(1).max(60);
+
+export const CategoryDTOSchema = z.object({
+  id: z.string().uuid(),
+  name: CategoryNameSchema,
+  sortOrder: z.number().int(),
+  disabledAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type CategoryDTO = z.infer<typeof CategoryDTOSchema>;
+
+export const CategoryCreateSchema = z.object({
+  name: CategoryNameSchema,
+  sortOrder: z.number().int().default(0),
+});
+export type CategoryCreate = z.infer<typeof CategoryCreateSchema>;
+
+export const CategoryPatchSchema = z.object({
+  name: CategoryNameSchema.optional(),
+  sortOrder: z.number().int().optional(),
+  disabledAt: z.string().nullable().optional(),
+});
+export type CategoryPatch = z.infer<typeof CategoryPatchSchema>;
