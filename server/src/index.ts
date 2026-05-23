@@ -4,6 +4,7 @@ import { logger } from './logger.js';
 import { openDatabase } from './db/connection.js';
 import { runMigrations } from './db/migrations.js';
 import { createDocumentsRepo } from './db/documentsRepo.js';
+import { createDocumentTypesRepo } from './db/documentTypesRepo.js';
 import { createFileStore } from './storage/fileStore.js';
 import { buildApp } from './app.js';
 import path from 'node:path';
@@ -25,11 +26,13 @@ function main(): void {
   const db = openDatabase(cfg.dbPath);
   runMigrations(db);
   const repo = createDocumentsRepo(db);
+  const documentTypesRepo = createDocumentTypesRepo(db);
   const store = createFileStore(cfg.fileRoot);
 
   const staticDir = path.resolve(process.cwd(), 'client/dist');
   const app = buildApp({
     repo,
+    documentTypesRepo,
     store,
     staticDir: fs.existsSync(staticDir) ? staticDir : undefined,
     testResetEnabled: process.env.E2E_RESET_ENABLED === '1',

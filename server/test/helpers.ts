@@ -6,6 +6,7 @@ import { buildApp } from '../src/app.js';
 import { openDatabase, type DB } from '../src/db/connection.js';
 import { runMigrations } from '../src/db/migrations.js';
 import { createDocumentsRepo } from '../src/db/documentsRepo.js';
+import { createDocumentTypesRepo } from '../src/db/documentTypesRepo.js';
 import { createFileStore } from '../src/storage/fileStore.js';
 
 const PNG_1x1 = Buffer.from(
@@ -30,12 +31,19 @@ export function makeTestEnv(opts: MakeTestEnvOptions = {}) {
   const db: DB = openDatabase(path.join(tmp, 'db', 'documents.db'));
   runMigrations(db);
   const repo = createDocumentsRepo(db);
+  const documentTypesRepo = createDocumentTypesRepo(db);
   const store = createFileStore(path.join(tmp, 'file'));
-  const app: Express = buildApp({ repo, store, testResetEnabled: opts.testResetEnabled });
+  const app: Express = buildApp({
+    repo,
+    documentTypesRepo,
+    store,
+    testResetEnabled: opts.testResetEnabled,
+  });
   return {
     tmp,
     db,
     repo,
+    documentTypesRepo,
     store,
     app,
     cleanup() {

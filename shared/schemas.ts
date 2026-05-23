@@ -107,3 +107,40 @@ export const ErrorEnvelopeSchema = z.object({
   }),
 });
 export type ErrorEnvelope = z.infer<typeof ErrorEnvelopeSchema>;
+
+export const DocumentTypeIdSchema = z
+  .string()
+  .regex(/^[a-z][a-z0-9_]{0,39}$/, 'snake_case, 1-40 chars');
+
+export const DocumentTypeLabelSchema = z.string().trim().min(1).max(60);
+
+export const DocumentTypeDTOSchema = z.object({
+  id: DocumentTypeIdSchema,
+  label: DocumentTypeLabelSchema,
+  requiresFinancial: z.boolean(),
+  sortOrder: z.number().int(),
+  disabledAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type DocumentTypeDTO = z.infer<typeof DocumentTypeDTOSchema>;
+
+export const DocumentTypeCreateSchema = z.object({
+  id: DocumentTypeIdSchema,
+  label: DocumentTypeLabelSchema,
+  requiresFinancial: z.boolean().default(false),
+  sortOrder: z.number().int().default(0),
+});
+export type DocumentTypeCreate = z.infer<typeof DocumentTypeCreateSchema>;
+
+export const DocumentTypePatchSchema = z
+  .object({
+    label: DocumentTypeLabelSchema.optional(),
+    sortOrder: z.number().int().optional(),
+    disabledAt: z.string().nullable().optional(),
+    requiresFinancial: z.unknown().optional(),
+  })
+  .refine((v) => v.requiresFinancial === undefined, {
+    message: 'requires_financial is immutable',
+    path: ['requiresFinancial'],
+  });
+export type DocumentTypePatch = z.infer<typeof DocumentTypePatchSchema>;
