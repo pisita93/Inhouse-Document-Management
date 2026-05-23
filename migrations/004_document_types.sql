@@ -85,10 +85,12 @@ CREATE INDEX idx_documents_type          ON documents(type);
 CREATE INDEX idx_documents_category      ON documents(category_id);
 CREATE INDEX idx_documents_created_at    ON documents(created_at);
 
--- Contentless FTS5 over document_name, note, short_note, tag_names, category_name.
+-- Regular (own-data) FTS5 over document_name, note, short_note, tag_names, category_name.
+-- Contentless FTS5 was rejected: tag/category join values change between INSERT and the
+-- self-UPDATE fired by document_tags / categories triggers, so the contentless 'delete'
+-- command's required-matching values diverge from the indexed values, corrupting the FTS index.
 CREATE VIRTUAL TABLE documents_fts USING fts5(
-  document_name, note, short_note, tag_names, category_name,
-  content=''
+  document_name, note, short_note, tag_names, category_name
 );
 
 CREATE TRIGGER documents_ai AFTER INSERT ON documents BEGIN
@@ -106,15 +108,7 @@ CREATE TRIGGER documents_ai AFTER INSERT ON documents BEGIN
 END;
 
 CREATE TRIGGER documents_au AFTER UPDATE ON documents BEGIN
-  INSERT INTO documents_fts(documents_fts, rowid, document_name, note, short_note, tag_names, category_name)
-  VALUES ('delete', old.rowid,
-    old.document_name,
-    COALESCE(old.note, ''),
-    COALESCE(old.short_note, ''),
-    COALESCE((SELECT GROUP_CONCAT(t.name, ' ')
-              FROM tags t JOIN document_tags dt ON dt.tag_id = t.id
-              WHERE dt.document_id = old.id), ''),
-    COALESCE((SELECT name FROM categories WHERE id = old.category_id), ''));
+  DELETE FROM documents_fts WHERE rowid = old.rowid;
   INSERT INTO documents_fts(rowid, document_name, note, short_note, tag_names, category_name)
   VALUES (
     new.rowid,
@@ -129,15 +123,7 @@ CREATE TRIGGER documents_au AFTER UPDATE ON documents BEGIN
 END;
 
 CREATE TRIGGER documents_ad AFTER DELETE ON documents BEGIN
-  INSERT INTO documents_fts(documents_fts, rowid, document_name, note, short_note, tag_names, category_name)
-  VALUES ('delete', old.rowid,
-    old.document_name,
-    COALESCE(old.note, ''),
-    COALESCE(old.short_note, ''),
-    COALESCE((SELECT GROUP_CONCAT(t.name, ' ')
-              FROM tags t JOIN document_tags dt ON dt.tag_id = t.id
-              WHERE dt.document_id = old.id), ''),
-    COALESCE((SELECT name FROM categories WHERE id = old.category_id), ''));
+  DELETE FROM documents_fts WHERE rowid = old.rowid;
 END;
 
 -- Tag join triggers: refresh FTS row when tags are attached/detached.
