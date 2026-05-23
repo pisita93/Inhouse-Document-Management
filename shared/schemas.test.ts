@@ -28,76 +28,77 @@ describe('DOCUMENT_TYPES', () => {
   });
 });
 
-describe('requiresFinancials', () => {
-  it('returns true only for invoice and receipt', () => {
+describe('deprecated requiresFinancials helpers', () => {
+  it('still resolves invoice/receipt as financial', () => {
     expect(requiresFinancials('invoice')).toBe(true);
     expect(requiresFinancials('receipt')).toBe(true);
     expect(requiresFinancials('contract')).toBe(false);
-    expect(requiresFinancials('policy')).toBe(false);
-    expect(requiresFinancials('other')).toBe(false);
-  });
-
-  it('REQUIRES_FINANCIALS set matches the helper', () => {
     expect(REQUIRES_FINANCIALS.has('invoice')).toBe(true);
-    expect(REQUIRES_FINANCIALS.has('contract')).toBe(false);
   });
 });
 
-describe('DocumentCreateSchema', () => {
-  const validInvoice = {
-    documentName: 'AWS Jan',
-    type: 'invoice',
-    invoiceDate: '2026-01-15',
-    amount: 12500,
-    currency: 'THB',
-  };
-
-  it('accepts an invoice with financials', () => {
-    expect(() => DocumentCreateSchema.parse(validInvoice)).not.toThrow();
+describe('DocumentCreateSchema (flat)', () => {
+  it('accepts an invoice with full financial trio', () => {
+    expect(() =>
+      DocumentCreateSchema.parse({
+        documentName: 'AWS Jan',
+        type: 'invoice',
+        invoiceDate: '2026-01-15',
+        amount: 12500,
+        currency: 'THB',
+      }),
+    ).not.toThrow();
   });
 
-  it('rejects an invoice missing amount', () => {
-    const r = DocumentCreateSchema.safeParse({ ...validInvoice, amount: undefined });
-    expect(r.success).toBe(false);
+  it('accepts an invoice WITHOUT financial trio (server now enforces)', () => {
+    const r = DocumentCreateSchema.safeParse({
+      documentName: 'AWS Jan',
+      type: 'invoice',
+    });
+    expect(r.success).toBe(true);
   });
 
-  it('rejects an invoice missing invoiceDate', () => {
-    const r = DocumentCreateSchema.safeParse({ ...validInvoice, invoiceDate: undefined });
-    expect(r.success).toBe(false);
-  });
-
-  it('accepts a contract with no financial fields', () => {
+  it('accepts a contract without financial fields', () => {
     expect(() =>
       DocumentCreateSchema.parse({ documentName: 'NDA 2026', type: 'contract' }),
     ).not.toThrow();
   });
 
-  it('accepts a contract that happens to include null financials (optional)', () => {
-    expect(() =>
-      DocumentCreateSchema.parse({
-        documentName: 'NDA 2026',
-        type: 'contract',
-        note: 'signed',
-      }),
-    ).not.toThrow();
+  it('accepts categoryId and tagNames', () => {
+    const r = DocumentCreateSchema.safeParse({
+      documentName: 'Doc',
+      type: 'other',
+      categoryId: '11111111-1111-4111-8111-111111111111',
+      tagNames: ['Finance', 'HR-2026'],
+    });
+    expect(r.success).toBe(true);
+    expect(r.success && r.data.tagNames).toEqual(['finance', 'hr-2026']);
   });
 
-  it('strips any client-supplied documentDate (never accepted from client)', () => {
+  it('rejects an unknown shape via type regex', () => {
+    const r = DocumentCreateSchema.safeParse({ documentName: 'x', type: 'Bad-Type' });
+    expect(r.success).toBe(false);
+  });
+
+  it('strips any client-supplied documentDate', () => {
     const parsed = DocumentCreateSchema.parse({
-      ...validInvoice,
+      documentName: 'x',
+      type: 'contract',
       documentDate: '2099-12-31',
-    } as unknown as typeof validInvoice);
+    } as unknown as { documentName: string; type: string });
     expect((parsed as Record<string, unknown>).documentDate).toBeUndefined();
   });
 });
 
 describe('DocumentDTOSchema', () => {
-  it('requires documentDate (string) and allows null invoiceDate/amount/currency', () => {
+  it('requires category (nullable) and tags (array) on DTO', () => {
     expect(() =>
       DocumentDTOSchema.parse({
         id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
         documentName: 'NDA',
         type: 'contract',
+        category: null,
+        tags: [],
         documentDate: '2026-05-16',
         invoiceDate: null,
         amount: null,

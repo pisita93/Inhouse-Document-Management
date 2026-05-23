@@ -1,10 +1,12 @@
+import { v4 as uuidv4 } from 'uuid';
 import type { DB } from './connection.js';
-import type { DocumentDTO, DocumentType, Currency, ListQuery } from '../../../shared/schemas.js';
+import type { DocumentDTO, Currency, ListQuery } from '../../../shared/schemas.js';
 
 interface DocumentRow {
   id: string;
   document_name: string;
-  type: DocumentType;
+  type: string;
+  category_id: string | null;
   document_date: string;
   invoice_date: string | null;
   amount: number | null;
@@ -18,11 +20,35 @@ interface DocumentRow {
   created_at: string;
 }
 
-function rowToDTO(r: DocumentRow): DocumentDTO {
+export interface DocumentRowInput {
+  id: string;
+  documentName: string;
+  type: string;
+  documentDate: string;
+  invoiceDate: string | null;
+  amount: number | null;
+  currency: Currency | null;
+  shortNote: string | null;
+  note: string | null;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
+interface Joins {
+  category: { id: string; name: string } | null;
+  tags: Array<{ id: string; name: string }>;
+}
+
+function rowToDTO(r: DocumentRow, joins: Joins): DocumentDTO {
   return {
     id: r.id,
     documentName: r.document_name,
     type: r.type,
+    category: joins.category,
+    tags: joins.tags,
     documentDate: r.document_date,
     invoiceDate: r.invoice_date,
     amount: r.amount,
@@ -50,14 +76,16 @@ function shortNoteToLike(pattern: string): string {
   return withWildcards.includes('%') ? withWildcards : `%${withWildcards}%`;
 }
 
+const EMPTY_JOINS: Joins = { category: null, tags: [] };
+
 export function createDocumentsRepo(db: DB) {
   const insertStmt = db.prepare(`
     INSERT INTO documents (
-      id, document_name, type, document_date, invoice_date, amount, currency,
+      id, document_name, type, category_id, document_date, invoice_date, amount, currency,
       short_note, note,
       filename, original_name, mime_type, size_bytes, created_at
     ) VALUES (
-      @id, @documentName, @type, @documentDate, @invoiceDate, @amount, @currency,
+      @id, @documentName, @type, @categoryId, @documentDate, @invoiceDate, @amount, @currency,
       @shortNote, @note,
       @filename, @originalName, @mimeType, @sizeBytes, @createdAt
     )
@@ -65,6 +93,15 @@ export function createDocumentsRepo(db: DB) {
 
   const getStmt = db.prepare(`SELECT * FROM documents WHERE id = ?`);
   const deleteStmt = db.prepare(`DELETE FROM documents WHERE id = ?`);
+  const getCategoryStmt = db.prepare(`SELECT id, name FROM categories WHERE id = ?`);
+
+  const upsertTagStmt = db.prepare(
+    `INSERT OR IGNORE INTO tags (id, name, created_at) VALUES (@id, @name, @created_at)`,
+  );
+  const selectTagByNameStmt = db.prepare(`SELECT id, name FROM tags WHERE name = ? COLLATE NOCASE`);
+  const linkTagStmt = db.prepare(
+    `INSERT OR IGNORE INTO document_tags (document_id, tag_id) VALUES (?, ?)`,
+  );
 
   function buildListSQL(q: ListQuery): { sql: string; countSQL: string; params: unknown[] } {
     const where: string[] = [];
@@ -109,29 +146,69 @@ export function createDocumentsRepo(db: DB) {
     return { sql, countSQL, params };
   }
 
+  function resolveCategoryById(categoryId: string | null): { id: string; name: string } | null {
+    if (!categoryId) return null;
+    const row = getCategoryStmt.get(categoryId) as { id: string; name: string } | undefined;
+    return row ?? null;
+  }
+
   return {
-    insert(dto: DocumentDTO): void {
-      insertStmt.run({
-        id: dto.id,
-        documentName: dto.documentName,
-        type: dto.type,
-        documentDate: dto.documentDate,
-        invoiceDate: dto.invoiceDate,
-        amount: dto.amount,
-        currency: dto.currency,
-        shortNote: dto.shortNote ?? null,
-        note: dto.note ?? null,
-        filename: dto.filename,
-        originalName: dto.originalName,
-        mimeType: dto.mimeType,
-        sizeBytes: dto.sizeBytes,
-        createdAt: dto.createdAt,
+    insertWithRelations(input: {
+      dto: DocumentRowInput;
+      categoryId: string | null;
+      tagNames: string[];
+    }): DocumentDTO {
+      let resolvedCategory: { id: string; name: string } | null = null;
+      const resolvedTags: Array<{ id: string; name: string }> = [];
+      const seenTagNames = new Set<string>();
+
+      const txn = db.transaction(() => {
+        insertStmt.run({
+          id: input.dto.id,
+          documentName: input.dto.documentName,
+          type: input.dto.type,
+          categoryId: input.categoryId,
+          documentDate: input.dto.documentDate,
+          invoiceDate: input.dto.invoiceDate,
+          amount: input.dto.amount,
+          currency: input.dto.currency,
+          shortNote: input.dto.shortNote,
+          note: input.dto.note,
+          filename: input.dto.filename,
+          originalName: input.dto.originalName,
+          mimeType: input.dto.mimeType,
+          sizeBytes: input.dto.sizeBytes,
+          createdAt: input.dto.createdAt,
+        });
+
+        resolvedCategory = resolveCategoryById(input.categoryId);
+
+        for (const rawName of input.tagNames) {
+          const name = rawName.trim().toLowerCase();
+          if (!name || seenTagNames.has(name)) continue;
+          seenTagNames.add(name);
+          upsertTagStmt.run({
+            id: uuidv4(),
+            name,
+            created_at: new Date().toISOString(),
+          });
+          const tagRow = selectTagByNameStmt.get(name) as { id: string; name: string } | undefined;
+          if (!tagRow) {
+            throw new Error(`tag upsert failed for name=${name}`);
+          }
+          linkTagStmt.run(input.dto.id, tagRow.id);
+          resolvedTags.push({ id: tagRow.id, name: tagRow.name });
+        }
       });
+      txn();
+
+      const row = getStmt.get(input.dto.id) as DocumentRow;
+      return rowToDTO(row, { category: resolvedCategory, tags: resolvedTags });
     },
 
     getById(id: string): DocumentDTO | null {
       const row = getStmt.get(id) as DocumentRow | undefined;
-      return row ? rowToDTO(row) : null;
+      return row ? rowToDTO(row, EMPTY_JOINS) : null;
     },
 
     list(q: ListQuery): ListResult {
@@ -139,7 +216,12 @@ export function createDocumentsRepo(db: DB) {
       const offset = (q.page - 1) * q.pageSize;
       const rows = db.prepare(sql).all(...params, q.pageSize, offset) as DocumentRow[];
       const total = (db.prepare(countSQL).get(...params) as { c: number }).c;
-      return { items: rows.map(rowToDTO), total, page: q.page, pageSize: q.pageSize };
+      return {
+        items: rows.map((r) => rowToDTO(r, EMPTY_JOINS)),
+        total,
+        page: q.page,
+        pageSize: q.pageSize,
+      };
     },
 
     delete(id: string): boolean {

@@ -253,7 +253,7 @@ export function BrowsePage() {
                 <tr key={d.id}>
                   <td>{d.documentName}</td>
                   <td>
-                    <TypeChip type={d.type} />
+                    <TypeChip type={d.type as DocumentType} />
                   </td>
                   <td>{d.shortNote ?? '—'}</td>
                   <td>{d.invoiceDate ?? '—'}</td>

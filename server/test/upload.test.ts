@@ -34,6 +34,8 @@ describe('POST /api/documents', () => {
     expect(res.body.documentDate).toBe(today);
     expect(res.body.invoiceDate).toBe('2026-01-15');
     expect(res.body.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(res.body.category).toBeNull();
+    expect(res.body.tags).toEqual([]);
 
     const onDisk = path.join(env.tmp, 'file', yyyy, mm, `${res.body.id}.pdf`);
     expect(fs.existsSync(onDisk)).toBe(true);
@@ -49,9 +51,11 @@ describe('POST /api/documents', () => {
     expect(res.body.amount).toBeNull();
     expect(res.body.currency).toBeNull();
     expect(res.body.documentDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(res.body.category).toBeNull();
+    expect(res.body.tags).toEqual([]);
   });
 
-  it('rejects invoice missing amount with VALIDATION + fields.amount', async () => {
+  it('rejects invoice without financial trio (FINANCIAL_FIELDS_REQUIRED)', async () => {
     const bad = { ...validInvoice } as Record<string, unknown>;
     delete bad.amount;
     const res = await request(env.app)
@@ -59,8 +63,7 @@ describe('POST /api/documents', () => {
       .field('metadata', JSON.stringify(bad))
       .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION');
-    expect(res.body.error.fields.amount).toBeTruthy();
+    expect(res.body.error.code).toBe('FINANCIAL_FIELDS_REQUIRED');
   });
 
   it('client-supplied documentDate is ignored (server overrides)', async () => {
@@ -88,13 +91,95 @@ describe('POST /api/documents', () => {
     expect(res.status).toBe(400);
   });
 
-  it('rejects unknown type', async () => {
+  it('rejects unknown type (UNKNOWN_OR_DISABLED_TYPE)', async () => {
     const res = await request(env.app)
       .post('/api/documents')
       .field('metadata', JSON.stringify({ ...validInvoice, type: 'bogus' }))
       .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
     expect(res.status).toBe(400);
-    expect(res.body.error.fields.type).toBeTruthy();
+    expect(res.body.error.code).toBe('UNKNOWN_OR_DISABLED_TYPE');
+  });
+
+  it('rejects disabled type (UNKNOWN_OR_DISABLED_TYPE)', async () => {
+    env.documentTypesRepo.patch('other', { disabledAt: new Date().toISOString() });
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field('metadata', JSON.stringify({ documentName: 'X', type: 'other' }))
+      .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('UNKNOWN_OR_DISABLED_TYPE');
+  });
+
+  it('rejects unknown categoryId (UNKNOWN_OR_DISABLED_CATEGORY)', async () => {
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field(
+        'metadata',
+        JSON.stringify({
+          ...validContract,
+          categoryId: '00000000-0000-4000-8000-000000000000',
+        }),
+      )
+      .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('UNKNOWN_OR_DISABLED_CATEGORY');
+  });
+
+  it('rejects disabled categoryId (UNKNOWN_OR_DISABLED_CATEGORY)', async () => {
+    const cat = env.categoriesRepo.create({ name: 'Sales', sortOrder: 0 });
+    env.categoriesRepo.patch(cat.id, { disabledAt: new Date().toISOString() });
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field('metadata', JSON.stringify({ ...validContract, categoryId: cat.id }))
+      .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('UNKNOWN_OR_DISABLED_CATEGORY');
+  });
+
+  it('accepts active categoryId and reflects it on the DTO', async () => {
+    const cat = env.categoriesRepo.create({ name: 'Finance', sortOrder: 0 });
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field('metadata', JSON.stringify({ ...validContract, categoryId: cat.id }))
+      .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
+    expect(res.status).toBe(201);
+    expect(res.body.category).toEqual({ id: cat.id, name: 'Finance' });
+  });
+
+  it('persists tagNames as deduped lowercased tags + document_tags links', async () => {
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field(
+        'metadata',
+        JSON.stringify({
+          ...validContract,
+          tagNames: ['Finance', 'finance', 'HR-2026'],
+        }),
+      )
+      .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
+    expect(res.status).toBe(201);
+    const names = (res.body.tags as Array<{ name: string }>).map((t) => t.name).sort();
+    expect(names).toEqual(['finance', 'hr-2026']);
+
+    const allTags = env.tagsRepo.list({});
+    const tagNames = allTags.map((t) => t.name).sort();
+    expect(tagNames).toEqual(['finance', 'hr-2026']);
+
+    const links = env.db
+      .prepare('SELECT COUNT(*) AS c FROM document_tags WHERE document_id = ?')
+      .get(res.body.id) as { c: number };
+    expect(links.c).toBe(2);
+  });
+
+  it('reuses existing tag rows when tagNames already exist (case-insensitive)', async () => {
+    env.tagsRepo.upsertByName('finance');
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field('metadata', JSON.stringify({ ...validContract, tagNames: ['Finance'] }))
+      .attach('file', env.fixtures.PDF_MIN, 'x.pdf');
+    expect(res.status).toBe(201);
+    expect(env.tagsRepo.list({}).length).toBe(1);
+    expect(res.body.tags).toEqual([{ id: expect.any(String), name: 'finance' }]);
   });
 
   it('rejects file that fails byte-sniff', async () => {

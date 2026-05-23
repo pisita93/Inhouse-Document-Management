@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { SubBar } from '../components/SubBar.js';
 import { TypeChip } from '../components/TypeChip.js';
-import { requiresFinancials, type DocumentDTO } from '../types.js';
+import { requiresFinancials, type DocumentDTO, type DocumentType } from '../types.js';
 
 export function DocumentDetailPage() {
   const { id = '' } = useParams();
@@ -44,7 +44,7 @@ export function DocumentDetailPage() {
     );
   if (!dto) return null;
 
-  const showFinancials = requiresFinancials(dto.type);
+  const showFinancials = requiresFinancials(dto.type as DocumentType);
 
   return (
     <>
@@ -68,7 +68,7 @@ export function DocumentDetailPage() {
         }}
       >
         <h2 style={{ marginTop: 0 }}>
-          {dto.documentName} <TypeChip type={dto.type} />
+          {dto.documentName} <TypeChip type={dto.type as DocumentType} />
         </h2>
         <dl>
           <dt>Type</dt>

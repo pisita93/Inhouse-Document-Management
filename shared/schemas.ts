@@ -17,61 +17,39 @@ export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 export const CURRENCIES = ['THB', 'USD', 'EUR', 'JPY', 'CNY'] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
-export const REQUIRES_FINANCIALS = new Set<DocumentType>(['invoice', 'receipt']);
-
-export function requiresFinancials(type: DocumentType): boolean {
-  return REQUIRES_FINANCIALS.has(type);
-}
-
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'must be YYYY-MM-DD');
 
-const FinancialFields = {
-  invoiceDate: isoDate,
-  amount: z.number().int().nonnegative(),
-  currency: z.enum(CURRENCIES),
-};
+export const DocumentTypeIdSchema = z
+  .string()
+  .regex(/^[a-z][a-z0-9_]{0,39}$/, 'snake_case, 1-40 chars');
 
-const baseFields = {
+export const TagNameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1)
+  .max(40)
+  .regex(/^[a-z0-9][a-z0-9 _-]*$/, 'letters, digits, space, _, - only');
+
+export const DocumentCreateSchema = z.object({
   documentName: z.string().min(1).max(200),
+  type: DocumentTypeIdSchema,
+  categoryId: z.string().uuid().nullish(),
+  tagNames: z.array(TagNameSchema).max(20).optional(),
+  invoiceDate: isoDate.optional(),
+  amount: z.number().int().nonnegative().optional(),
+  currency: z.enum(CURRENCIES).optional(),
   shortNote: z.string().max(30).optional(),
   note: z.string().max(2000).optional(),
-};
-
-const financialVariants = (['invoice', 'receipt'] as const).map((t) =>
-  z.object({
-    ...baseFields,
-    type: z.literal(t),
-    ...FinancialFields,
-  }),
-);
-
-const nonFinancialTypes = DOCUMENT_TYPES.filter(
-  (t) => !REQUIRES_FINANCIALS.has(t),
-) as ReadonlyArray<Exclude<DocumentType, 'invoice' | 'receipt'>>;
-
-const nonFinancialVariants = nonFinancialTypes.map((t) =>
-  z.object({
-    ...baseFields,
-    type: z.literal(t),
-    invoiceDate: isoDate.optional(),
-    amount: z.number().int().nonnegative().optional(),
-    currency: z.enum(CURRENCIES).optional(),
-  }),
-);
-
-export const DocumentCreateSchema = z.discriminatedUnion('type', [
-  ...financialVariants,
-  ...nonFinancialVariants,
-] as unknown as readonly [
-  (typeof financialVariants)[number],
-  ...(typeof financialVariants | typeof nonFinancialVariants)[number][],
-]);
+});
 export type DocumentCreate = z.infer<typeof DocumentCreateSchema>;
 
 export const DocumentDTOSchema = z.object({
   id: z.string().uuid(),
   documentName: z.string(),
-  type: z.enum(DOCUMENT_TYPES),
+  type: DocumentTypeIdSchema,
+  category: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+  tags: z.array(z.object({ id: z.string().uuid(), name: z.string() })),
   documentDate: isoDate,
   invoiceDate: isoDate.nullable(),
   amount: z.number().int().nonnegative().nullable(),
@@ -107,10 +85,6 @@ export const ErrorEnvelopeSchema = z.object({
   }),
 });
 export type ErrorEnvelope = z.infer<typeof ErrorEnvelopeSchema>;
-
-export const DocumentTypeIdSchema = z
-  .string()
-  .regex(/^[a-z][a-z0-9_]{0,39}$/, 'snake_case, 1-40 chars');
 
 export const DocumentTypeLabelSchema = z.string().trim().min(1).max(60);
 
@@ -169,14 +143,6 @@ export const CategoryPatchSchema = z.object({
 });
 export type CategoryPatch = z.infer<typeof CategoryPatchSchema>;
 
-export const TagNameSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .min(1)
-  .max(40)
-  .regex(/^[a-z0-9][a-z0-9 _-]*$/, 'letters, digits, space, _, - only');
-
 export const TagDTOSchema = z.object({
   id: z.string().uuid(),
   name: TagNameSchema,
@@ -189,3 +155,11 @@ export type TagCreate = z.infer<typeof TagCreateSchema>;
 
 export const TagPatchSchema = z.object({ name: TagNameSchema });
 export type TagPatch = z.infer<typeof TagPatchSchema>;
+
+/** @deprecated Use the runtime document_types lookup; this is removed in Task 12. */
+export const REQUIRES_FINANCIALS = new Set<DocumentType>(['invoice', 'receipt']);
+
+/** @deprecated Use the runtime document_types lookup; this is removed in Task 12. */
+export function requiresFinancials(type: DocumentType): boolean {
+  return REQUIRES_FINANCIALS.has(type);
+}

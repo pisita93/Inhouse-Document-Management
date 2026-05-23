@@ -1,18 +1,20 @@
 import { Router, type Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'node:path';
-import {
-  DocumentCreateSchema,
-  ListQuerySchema,
-  type DocumentDTO,
-} from '../../../shared/schemas.js';
+import { DocumentCreateSchema, ListQuerySchema } from '../../../shared/schemas.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { uploadMiddleware, sniffOrThrow, multerErrorAsApiError } from '../middleware/upload.js';
-import type { createDocumentsRepo } from '../db/documentsRepo.js';
+import type { createDocumentsRepo, DocumentRowInput } from '../db/documentsRepo.js';
+import type { createDocumentTypesRepo } from '../db/documentTypesRepo.js';
+import type { createCategoriesRepo } from '../db/categoriesRepo.js';
+import type { createTagsRepo } from '../db/tagsRepo.js';
 import type { FileStore } from '../storage/fileStore.js';
 
 interface Deps {
   repo: ReturnType<typeof createDocumentsRepo>;
+  documentTypesRepo: ReturnType<typeof createDocumentTypesRepo>;
+  categoriesRepo: ReturnType<typeof createCategoriesRepo>;
+  tagsRepo: ReturnType<typeof createTagsRepo>;
   store: FileStore;
 }
 
@@ -28,7 +30,7 @@ function parseMetadata(raw: unknown): unknown {
 }
 
 export function documentsRouter(deps: Deps): Router {
-  const { repo, store } = deps;
+  const { repo, documentTypesRepo, categoriesRepo, store } = deps;
   const r = Router();
 
   r.post('/', (req, res, next) => {
@@ -44,6 +46,40 @@ export function documentsRouter(deps: Deps): Router {
         const rawMeta = parseMetadata((req.body as Record<string, unknown>).metadata);
         const meta = DocumentCreateSchema.parse(rawMeta);
 
+        const type = documentTypesRepo.getById(meta.type);
+        if (!type || type.disabledAt) {
+          throw new ApiError(
+            400,
+            'UNKNOWN_OR_DISABLED_TYPE',
+            `type '${meta.type}' is not available`,
+          );
+        }
+
+        if (meta.categoryId) {
+          const cat = categoriesRepo.getById(meta.categoryId);
+          if (!cat || cat.disabledAt) {
+            throw new ApiError(
+              400,
+              'UNKNOWN_OR_DISABLED_CATEGORY',
+              `category '${meta.categoryId}' is not available`,
+            );
+          }
+        }
+
+        if (type.requiresFinancial) {
+          if (
+            meta.invoiceDate === undefined ||
+            meta.amount === undefined ||
+            meta.currency === undefined
+          ) {
+            throw new ApiError(
+              400,
+              'FINANCIAL_FIELDS_REQUIRED',
+              `type '${type.id}' requires invoice_date, amount, currency`,
+            );
+          }
+        }
+
         const { mime, ext } = await sniffOrThrow(file.buffer);
 
         const id = uuidv4();
@@ -53,16 +89,16 @@ export function documentsRouter(deps: Deps): Router {
 
         await store.write(id, ext, now, file.buffer);
 
-        const dto: DocumentDTO = {
+        const rowInput: DocumentRowInput = {
           id,
           documentName: meta.documentName,
           type: meta.type,
           documentDate: today,
-          invoiceDate: 'invoiceDate' in meta ? (meta.invoiceDate ?? null) : null,
-          amount: 'amount' in meta ? (meta.amount ?? null) : null,
-          currency: 'currency' in meta ? (meta.currency ?? null) : null,
-          shortNote: meta.shortNote,
-          note: meta.note,
+          invoiceDate: meta.invoiceDate ?? null,
+          amount: meta.amount ?? null,
+          currency: meta.currency ?? null,
+          shortNote: meta.shortNote ?? null,
+          note: meta.note ?? null,
           filename,
           originalName: file.originalname,
           mimeType: mime,
@@ -70,8 +106,13 @@ export function documentsRouter(deps: Deps): Router {
           createdAt: now,
         };
 
+        let dto;
         try {
-          repo.insert(dto);
+          dto = repo.insertWithRelations({
+            dto: rowInput,
+            categoryId: meta.categoryId ?? null,
+            tagNames: meta.tagNames ?? [],
+          });
         } catch (e) {
           await store.unlink(id, ext, now);
           throw e;
