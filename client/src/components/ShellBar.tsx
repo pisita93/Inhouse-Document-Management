@@ -16,6 +16,9 @@ export function ShellBar() {
         <NavLink to="/browse" className={navLinkClass}>
           Browse
         </NavLink>
+        <NavLink to="/settings" className={navLinkClass}>
+          Settings
+        </NavLink>
       </nav>
       <span className="fi-shellbar__avatar" aria-hidden>
         PS

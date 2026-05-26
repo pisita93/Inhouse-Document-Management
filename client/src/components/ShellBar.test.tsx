@@ -23,4 +23,14 @@ describe('ShellBar', () => {
     );
     expect(screen.getByText('PS')).toBeTruthy();
   });
+
+  it('renders a Settings link to /settings', () => {
+    render(
+      <MemoryRouter>
+        <ShellBar />
+      </MemoryRouter>,
+    );
+    const link = screen.getByRole('link', { name: /settings/i });
+    expect(link.getAttribute('href')).toBe('/settings');
+  });
 });
