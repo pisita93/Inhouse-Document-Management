@@ -1,4 +1,13 @@
-import type { DocumentCreate, DocumentDTO, ListQuery } from './types.js';
+import type {
+  CategoryDTO,
+  DocumentCreate,
+  DocumentDTO,
+  DocumentTypeDTO,
+  ListQuery,
+  TagDTO,
+} from './types.js';
+
+const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 
 export interface ApiErrorShape {
   code: string;
@@ -44,6 +53,21 @@ async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+async function requestVoid(input: RequestInfo, init?: RequestInit): Promise<void> {
+  const res = await fetch(input, init);
+  if (!res.ok) {
+    const body = await res
+      .json()
+      .catch(() => ({ error: { code: 'INTERNAL', message: res.statusText } }));
+    throw new ApiClientError(
+      body.error?.code ?? 'INTERNAL',
+      body.error?.message ?? 'Request failed',
+      body.error?.fields,
+      res.status,
+    );
+  }
+}
+
 function buildQuery(q: Partial<ListQuery>): string {
   const sp = new URLSearchParams();
   if (q.type) sp.set('type', q.type);
@@ -87,5 +111,98 @@ export const api = {
       const body = await res.json().catch(() => ({ error: { code: 'INTERNAL', message: '' } }));
       throw new ApiClientError(body.error.code, body.error.message);
     }
+  },
+};
+
+export const tagsApi = {
+  list(q?: string): Promise<{ items: TagDTO[] }> {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : '';
+    return request(`/api/tags${qs}`);
+  },
+  create(name: string): Promise<TagDTO> {
+    return request('/api/tags', {
+      method: 'POST',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ name }),
+    });
+  },
+  rename(id: string, name: string): Promise<TagDTO> {
+    return request(`/api/tags/${id}`, {
+      method: 'PATCH',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ name }),
+    });
+  },
+  remove(id: string): Promise<void> {
+    return requestVoid(`/api/tags/${id}`, { method: 'DELETE' });
+  },
+};
+
+interface CategoryCreateInput {
+  name: string;
+  sortOrder?: number;
+}
+
+interface CategoryPatchInput {
+  name?: string;
+  sortOrder?: number;
+  disabledAt?: string | null;
+}
+
+export const categoriesApi = {
+  list(includeDisabled = false): Promise<{ items: CategoryDTO[] }> {
+    const qs = includeDisabled ? '?includeDisabled=true' : '';
+    return request(`/api/categories${qs}`);
+  },
+  create(input: CategoryCreateInput): Promise<CategoryDTO> {
+    return request('/api/categories', {
+      method: 'POST',
+      headers: JSON_HEADERS,
+      body: JSON.stringify(input),
+    });
+  },
+  patch(id: string, patch: CategoryPatchInput): Promise<CategoryDTO> {
+    return request(`/api/categories/${id}`, {
+      method: 'PATCH',
+      headers: JSON_HEADERS,
+      body: JSON.stringify(patch),
+    });
+  },
+  remove(id: string): Promise<void> {
+    return requestVoid(`/api/categories/${id}`, { method: 'DELETE' });
+  },
+};
+
+interface DocumentTypeCreateInput {
+  id: string;
+  label: string;
+  requiresFinancial?: boolean;
+  sortOrder?: number;
+}
+
+interface DocumentTypePatchInput {
+  label?: string;
+  sortOrder?: number;
+  disabledAt?: string | null;
+}
+
+export const documentTypesApi = {
+  list(includeDisabled = false): Promise<{ items: DocumentTypeDTO[] }> {
+    const qs = includeDisabled ? '?includeDisabled=true' : '';
+    return request(`/api/document-types${qs}`);
+  },
+  create(input: DocumentTypeCreateInput): Promise<DocumentTypeDTO> {
+    return request('/api/document-types', {
+      method: 'POST',
+      headers: JSON_HEADERS,
+      body: JSON.stringify(input),
+    });
+  },
+  patch(id: string, patch: DocumentTypePatchInput): Promise<DocumentTypeDTO> {
+    return request(`/api/document-types/${id}`, {
+      method: 'PATCH',
+      headers: JSON_HEADERS,
+      body: JSON.stringify(patch),
+    });
   },
 };
