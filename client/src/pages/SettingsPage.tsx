@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DocumentTypesTab } from './settings/DocumentTypesTab.js';
 import { CategoriesTab } from './settings/CategoriesTab.js';
+import { TagsTab } from './settings/TagsTab.js';
 
 type Tab = 'tags' | 'categories' | 'document-types';
 
@@ -39,8 +40,4 @@ export function SettingsPage() {
       </section>
     </div>
   );
-}
-
-function TagsTab() {
-  return <p>tags tab</p>;
 }

@@ -149,6 +149,8 @@ export const TagDTOSchema = z.object({
   id: z.string().uuid(),
   name: TagNameSchema,
   createdAt: z.string(),
+  // populated only by the list endpoint; not present on POST/PATCH responses
+  usageCount: z.number().int().nonnegative().optional(),
 });
 export type TagDTO = z.infer<typeof TagDTOSchema>;
 

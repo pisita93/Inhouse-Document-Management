@@ -8,8 +8,16 @@ interface Row {
   created_at: string;
 }
 
+interface ListRow extends Row {
+  usage_count: number;
+}
+
 function rowToDTO(r: Row): TagDTO {
   return { id: r.id, name: r.name, createdAt: r.created_at };
+}
+
+function listRowToDTO(r: ListRow): TagDTO {
+  return { id: r.id, name: r.name, createdAt: r.created_at, usageCount: r.usage_count };
 }
 
 export function createTagsRepo(db: DB) {
@@ -18,9 +26,16 @@ export function createTagsRepo(db: DB) {
   );
   const getByNameStmt = db.prepare(`SELECT * FROM tags WHERE name = ? COLLATE NOCASE`);
   const getByIdStmt = db.prepare(`SELECT * FROM tags WHERE id = ?`);
-  const listAllStmt = db.prepare(`SELECT * FROM tags ORDER BY name`);
+  const listAllStmt = db.prepare(
+    `SELECT t.*, COUNT(dt.tag_id) AS usage_count
+     FROM tags t LEFT JOIN document_tags dt ON dt.tag_id = t.id
+     GROUP BY t.id ORDER BY t.name`,
+  );
   const listQueryStmt = db.prepare(
-    `SELECT * FROM tags WHERE name LIKE ? COLLATE NOCASE ORDER BY name LIMIT 50`,
+    `SELECT t.*, COUNT(dt.tag_id) AS usage_count
+     FROM tags t LEFT JOIN document_tags dt ON dt.tag_id = t.id
+     WHERE t.name LIKE ? COLLATE NOCASE
+     GROUP BY t.id ORDER BY t.name LIMIT 50`,
   );
   const renameStmt = db.prepare(`UPDATE tags SET name = ? WHERE id = ?`);
   const deleteStmt = db.prepare(`DELETE FROM tags WHERE id = ?`);
@@ -28,9 +43,9 @@ export function createTagsRepo(db: DB) {
   const repo = {
     list({ q }: { q?: string }): TagDTO[] {
       if (q && q.length > 0) {
-        return (listQueryStmt.all(`%${q}%`) as Row[]).map(rowToDTO);
+        return (listQueryStmt.all(`%${q}%`) as ListRow[]).map(listRowToDTO);
       }
-      return (listAllStmt.all() as Row[]).map(rowToDTO);
+      return (listAllStmt.all() as ListRow[]).map(listRowToDTO);
     },
 
     getById(id: string): TagDTO | null {

@@ -159,4 +159,21 @@ describe('tags routes', () => {
     const again = await request(env.app).delete(`/api/tags/${t.body.id}`);
     expect(again.status).toBe(404);
   });
+
+  it('GET /api/tags reports usageCount per tag', async () => {
+    const fin = await request(env.app).post('/api/tags').send({ name: 'finance' });
+    await request(env.app).post('/api/tags').send({ name: 'hr' });
+    insertDoc(env.db, 'doc-1');
+    insertDoc(env.db, 'doc-2');
+    const link = env.db.prepare('INSERT INTO document_tags (document_id, tag_id) VALUES (?, ?)');
+    link.run('doc-1', fin.body.id);
+    link.run('doc-2', fin.body.id);
+
+    const res = await request(env.app).get('/api/tags');
+    const counts = Object.fromEntries(
+      res.body.items.map((t: { name: string; usageCount: number }) => [t.name, t.usageCount]),
+    );
+    expect(counts.finance).toBe(2);
+    expect(counts.hr).toBe(0);
+  });
 });
