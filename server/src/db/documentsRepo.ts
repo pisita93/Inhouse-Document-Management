@@ -76,8 +76,6 @@ function shortNoteToLike(pattern: string): string {
   return withWildcards.includes('%') ? withWildcards : `%${withWildcards}%`;
 }
 
-const EMPTY_JOINS: Joins = { category: null, tags: [] };
-
 export function createDocumentsRepo(db: DB) {
   const insertStmt = db.prepare(`
     INSERT INTO documents (
@@ -119,6 +117,15 @@ export function createDocumentsRepo(db: DB) {
       where.push('d.type = ?');
       params.push(q.type);
     }
+    if (q.categoryId) {
+      where.push('d.category_id = ?');
+      params.push(q.categoryId);
+    }
+    if (q.tagId) {
+      fromClause += ' JOIN document_tags dt ON dt.document_id = d.id';
+      where.push('dt.tag_id = ?');
+      params.push(q.tagId);
+    }
     if (q.invoiceDateFrom) {
       where.push('d.invoice_date >= ?');
       params.push(q.invoiceDateFrom);
@@ -142,8 +149,46 @@ export function createDocumentsRepo(db: DB) {
 
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const sql = `SELECT d.* ${fromClause} ${whereClause} ${orderBy} LIMIT ? OFFSET ?`;
-    const countSQL = `SELECT COUNT(*) AS c ${fromClause} ${whereClause}`;
+    const countSQL = `SELECT COUNT(DISTINCT d.id) AS c ${fromClause} ${whereClause}`;
     return { sql, countSQL, params };
+  }
+
+  function attachJoins(rows: DocumentRow[]): DocumentDTO[] {
+    if (rows.length === 0) return [];
+    const ids = rows.map((r) => r.id);
+    const tagPlaceholders = ids.map(() => '?').join(',');
+    const tagRows = db
+      .prepare(
+        `SELECT dt.document_id, t.id, t.name
+         FROM document_tags dt JOIN tags t ON t.id = dt.tag_id
+         WHERE dt.document_id IN (${tagPlaceholders})`,
+      )
+      .all(...ids) as Array<{ document_id: string; id: string; name: string }>;
+
+    const tagsByDoc = new Map<string, Array<{ id: string; name: string }>>();
+    for (const tr of tagRows) {
+      const arr = tagsByDoc.get(tr.document_id) ?? [];
+      arr.push({ id: tr.id, name: tr.name });
+      tagsByDoc.set(tr.document_id, arr);
+    }
+
+    const categoryIds = rows.map((r) => r.category_id).filter((x): x is string => x !== null);
+    const catRows =
+      categoryIds.length === 0
+        ? []
+        : (db
+            .prepare(
+              `SELECT id, name FROM categories WHERE id IN (${categoryIds.map(() => '?').join(',')})`,
+            )
+            .all(...categoryIds) as Array<{ id: string; name: string }>);
+    const catById = new Map(catRows.map((c) => [c.id, c]));
+
+    return rows.map((r) =>
+      rowToDTO(r, {
+        category: r.category_id ? (catById.get(r.category_id) ?? null) : null,
+        tags: tagsByDoc.get(r.id) ?? [],
+      }),
+    );
   }
 
   function resolveCategoryById(categoryId: string | null): { id: string; name: string } | null {
@@ -208,7 +253,8 @@ export function createDocumentsRepo(db: DB) {
 
     getById(id: string): DocumentDTO | null {
       const row = getStmt.get(id) as DocumentRow | undefined;
-      return row ? rowToDTO(row, EMPTY_JOINS) : null;
+      if (!row) return null;
+      return attachJoins([row])[0] ?? null;
     },
 
     list(q: ListQuery): ListResult {
@@ -217,7 +263,7 @@ export function createDocumentsRepo(db: DB) {
       const rows = db.prepare(sql).all(...params, q.pageSize, offset) as DocumentRow[];
       const total = (db.prepare(countSQL).get(...params) as { c: number }).c;
       return {
-        items: rows.map((r) => rowToDTO(r, EMPTY_JOINS)),
+        items: attachJoins(rows),
         total,
         page: q.page,
         pageSize: q.pageSize,

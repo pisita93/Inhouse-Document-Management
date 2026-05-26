@@ -96,4 +96,64 @@ describe('GET /api/documents', () => {
     const res = await request(env.app).get('/api/documents?pageSize=500');
     expect(res.status).toBe(400);
   });
+
+  it('filters by categoryId', async () => {
+    const catA = env.categoriesRepo.create({ name: 'Alpha', sortOrder: 0 });
+    const catB = env.categoriesRepo.create({ name: 'Beta', sortOrder: 0 });
+    await uploadOne(env, { documentName: 'A1', categoryId: catA.id });
+    await uploadOne(env, { documentName: 'A2', categoryId: catA.id });
+    await uploadOne(env, { documentName: 'B1', categoryId: catB.id });
+    await uploadOne(env, { documentName: 'NONE' });
+
+    const res = await request(env.app).get(`/api/documents?categoryId=${catA.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.items.map((d: { documentName: string }) => d.documentName).sort()).toEqual([
+      'A1',
+      'A2',
+    ]);
+  });
+
+  it('filters by tagId', async () => {
+    await uploadOne(env, { documentName: 'F1', tagNames: ['finance'] });
+    await uploadOne(env, { documentName: 'F2', tagNames: ['finance'] });
+    await uploadOne(env, { documentName: 'H1', tagNames: ['hr'] });
+
+    const financeTag = env.tagsRepo.getByName('finance')!;
+    const res = await request(env.app).get(`/api/documents?tagId=${financeTag.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.items.map((d: { documentName: string }) => d.documentName).sort()).toEqual([
+      'F1',
+      'F2',
+    ]);
+  });
+
+  it('list items include category and tags', async () => {
+    const cat = env.categoriesRepo.create({ name: 'Finance', sortOrder: 0 });
+    await uploadOne(env, {
+      documentName: 'Joined',
+      categoryId: cat.id,
+      tagNames: ['alpha', 'beta'],
+    });
+
+    const res = await request(env.app).get('/api/documents');
+    expect(res.status).toBe(200);
+    expect(res.body.items[0].category).toEqual({ id: cat.id, name: 'Finance' });
+    const tagNames = res.body.items[0].tags.map((t: { name: string }) => t.name).sort();
+    expect(tagNames).toEqual(['alpha', 'beta']);
+  });
+
+  it('detail endpoint includes category and tags', async () => {
+    const cat = env.categoriesRepo.create({ name: 'Ops', sortOrder: 0 });
+    const create = await uploadOne(env, {
+      documentName: 'D',
+      categoryId: cat.id,
+      tagNames: ['ops-2026'],
+    });
+    const res = await request(env.app).get(`/api/documents/${create.body.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.category).toEqual({ id: cat.id, name: 'Ops' });
+    expect(res.body.tags.map((t: { name: string }) => t.name)).toEqual(['ops-2026']);
+  });
 });
