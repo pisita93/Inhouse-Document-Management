@@ -49,6 +49,19 @@ describe('api', () => {
     expect(url).toContain('uploadDateTo=2026-12-31');
   });
 
+  it('list serializes categoryId and tagId', async () => {
+    mockResponses({ status: 200, jsonBody: { items: [], total: 0, page: 1, pageSize: 20 } });
+    await api.list({
+      categoryId: '11111111-1111-4111-8111-111111111111',
+      tagId: '22222222-2222-4222-8222-222222222222',
+    });
+    const url = String(
+      (global.fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0],
+    );
+    expect(url).toContain('categoryId=11111111-1111-4111-8111-111111111111');
+    expect(url).toContain('tagId=22222222-2222-4222-8222-222222222222');
+  });
+
   it('retries once on DB_BUSY then resolves', async () => {
     mockResponses(
       { status: 503, jsonBody: { error: { code: 'DB_BUSY', message: 'busy' } } },

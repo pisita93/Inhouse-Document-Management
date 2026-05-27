@@ -1,10 +1,16 @@
 import { useEffect, useState, type ReactNode, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, categoriesApi, tagsApi } from '../api.js';
 import { SubBar } from '../components/SubBar.js';
 import { TypeChip } from '../components/TypeChip.js';
 import { FilterDrawer } from '../components/FilterDrawer.js';
-import { DOCUMENT_TYPES, type DocumentDTO, type DocumentType } from '../types.js';
+import {
+  DOCUMENT_TYPES,
+  type CategoryDTO,
+  type DocumentDTO,
+  type DocumentType,
+  type TagDTO,
+} from '../types.js';
 
 const TYPE_LABEL: Record<DocumentType, string> = {
   invoice: 'Invoice',
@@ -22,6 +28,8 @@ const TYPE_LABEL: Record<DocumentType, string> = {
 interface FilterValues {
   q: string;
   type: DocumentType | '';
+  categoryId: string;
+  tagId: string;
   shortNote: string;
   invoiceDateFrom: string;
   invoiceDateTo: string;
@@ -32,6 +40,8 @@ interface FilterValues {
 const EMPTY_FILTERS: FilterValues = {
   q: '',
   type: '',
+  categoryId: '',
+  tagId: '',
   shortNote: '',
   invoiceDateFrom: '',
   invoiceDateTo: '',
@@ -42,11 +52,20 @@ const EMPTY_FILTERS: FilterValues = {
 interface FilterPanelProps {
   draft: FilterValues;
   setDraft: (v: FilterValues) => void;
+  categories: CategoryDTO[];
+  tags: TagDTO[];
   onApply: () => void;
   onReset: () => void;
 }
 
-function FilterPanel({ draft, setDraft, onApply, onReset }: FilterPanelProps): ReactNode {
+function FilterPanel({
+  draft,
+  setDraft,
+  categories,
+  tags,
+  onApply,
+  onReset,
+}: FilterPanelProps): ReactNode {
   const update = <K extends keyof FilterValues>(key: K, value: FilterValues[K]) =>
     setDraft({ ...draft, [key]: value });
 
@@ -76,6 +95,36 @@ function FilterPanel({ draft, setDraft, onApply, onReset }: FilterPanelProps): R
         {DOCUMENT_TYPES.map((t) => (
           <option key={t} value={t}>
             {TYPE_LABEL[t]}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="filter-category">Category</label>
+      <select
+        id="filter-category"
+        value={draft.categoryId}
+        onChange={(e) => update('categoryId', e.target.value)}
+        style={{ width: '100%' }}
+      >
+        <option value="">All</option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="filter-tag">Tag</label>
+      <select
+        id="filter-tag"
+        value={draft.tagId}
+        onChange={(e) => update('tagId', e.target.value)}
+        style={{ width: '100%' }}
+      >
+        <option value="">All</option>
+        {tags.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
           </option>
         ))}
       </select>
@@ -144,6 +193,19 @@ export function BrowsePage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const [tags, setTags] = useState<TagDTO[]>([]);
+
+  useEffect(() => {
+    categoriesApi
+      .list()
+      .then((r) => setCategories(r.items))
+      .catch(() => {});
+    tagsApi
+      .list()
+      .then((r) => setTags(r.items))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,6 +215,8 @@ export function BrowsePage() {
       .list({
         q: applied.q || undefined,
         type: applied.type || undefined,
+        categoryId: applied.categoryId || undefined,
+        tagId: applied.tagId || undefined,
         shortNote: applied.shortNote || undefined,
         invoiceDateFrom: applied.invoiceDateFrom || undefined,
         invoiceDateTo: applied.invoiceDateTo || undefined,
@@ -188,7 +252,7 @@ export function BrowsePage() {
     setPage(1);
   };
 
-  const filterProps: FilterPanelProps = { draft, setDraft, onApply, onReset };
+  const filterProps: FilterPanelProps = { draft, setDraft, categories, tags, onApply, onReset };
 
   return (
     <>
@@ -251,9 +315,26 @@ export function BrowsePage() {
             <tbody>
               {items.map((d) => (
                 <tr key={d.id}>
-                  <td>{d.documentName}</td>
+                  <td>
+                    {d.documentName}
+                    {d.tags.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                        {d.tags.slice(0, 3).map((t) => (
+                          <span key={t.id} className="fi-tag-chip">
+                            {t.name}
+                          </span>
+                        ))}
+                        {d.tags.length > 3 && (
+                          <span className="fi-tag-chip fi-tag-chip--more">
+                            +{d.tags.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </td>
                   <td>
                     <TypeChip type={d.type as DocumentType} />
+                    {d.category && <span className="fi-category-badge">{d.category.name}</span>}
                   </td>
                   <td>{d.shortNote ?? '—'}</td>
                   <td>{d.invoiceDate ?? '—'}</td>
