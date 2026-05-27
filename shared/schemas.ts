@@ -159,11 +159,3 @@ export type TagCreate = z.infer<typeof TagCreateSchema>;
 
 export const TagPatchSchema = z.object({ name: TagNameSchema });
 export type TagPatch = z.infer<typeof TagPatchSchema>;
-
-/** @deprecated Use the runtime document_types lookup; this is removed in Task 12. */
-export const REQUIRES_FINANCIALS = new Set<DocumentType>(['invoice', 'receipt']);
-
-/** @deprecated Use the runtime document_types lookup; this is removed in Task 12. */
-export function requiresFinancials(type: DocumentType): boolean {
-  return REQUIRES_FINANCIALS.has(type);
-}

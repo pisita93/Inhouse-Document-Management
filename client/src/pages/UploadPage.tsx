@@ -1,31 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dropzone } from '../components/Dropzone.js';
 import { SubBar } from '../components/SubBar.js';
-import { api } from '../api.js';
+import { TagChipInput } from '../components/TagChipInput.js';
+import { api, categoriesApi, documentTypesApi } from '../api.js';
 import {
   CURRENCIES,
-  DOCUMENT_TYPES,
-  requiresFinancials,
-  type DocumentCreate,
-  type DocumentType,
+  type CategoryDTO,
   type Currency,
+  type DocumentCreate,
+  type DocumentTypeDTO,
 } from '../types.js';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-const TYPE_LABEL: Record<DocumentType, string> = {
-  invoice: 'Invoice',
-  receipt: 'Receipt',
-  quotation: 'Quotation',
-  contract: 'Contract',
-  policy: 'Policy',
-  hr_document: 'HR Document',
-  meeting_minutes: 'Meeting Minutes',
-  report: 'Report',
-  certificate: 'Certificate',
-  other: 'Other',
-};
+function errorText(e: unknown): string {
+  const err = e as { message?: string };
+  return err.message ?? 'Request failed';
+}
 
 export function UploadPage() {
   const navigate = useNavigate();
@@ -33,9 +25,13 @@ export function UploadPage() {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [types, setTypes] = useState<DocumentTypeDTO[]>([]);
+  const [categories, setCategories] = useState<CategoryDTO[]>([]);
+  const [tagNames, setTagNames] = useState<string[]>([]);
   const [form, setForm] = useState({
     documentName: '',
-    type: 'invoice' as DocumentType,
+    type: '',
+    categoryId: '',
     invoiceDate: todayISO(),
     amountMajor: '',
     currency: 'THB' as Currency,
@@ -43,7 +39,22 @@ export function UploadPage() {
     note: '',
   });
 
-  const showFinancials = useMemo(() => requiresFinancials(form.type), [form.type]);
+  useEffect(() => {
+    documentTypesApi
+      .list()
+      .then((r) => {
+        setTypes(r.items);
+        setForm((s) => (s.type ? s : { ...s, type: r.items[0]?.id ?? '' }));
+      })
+      .catch((e) => setServerError(errorText(e)));
+    categoriesApi
+      .list()
+      .then((r) => setCategories(r.items))
+      .catch((e) => setServerError(errorText(e)));
+  }, []);
+
+  const selectedType = types.find((t) => t.id === form.type);
+  const showFinancials = selectedType?.requiresFinancial ?? false;
 
   function update<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((s) => ({ ...s, [k]: v }));
@@ -58,29 +69,24 @@ export function UploadPage() {
       return;
     }
 
-    let meta: DocumentCreate;
+    const meta: DocumentCreate = {
+      documentName: form.documentName,
+      type: form.type,
+      categoryId: form.categoryId || null,
+      tagNames,
+      shortNote: form.shortNote || undefined,
+      note: form.note || undefined,
+    };
+
     if (showFinancials) {
       const amountNum = Number(form.amountMajor);
       if (!Number.isFinite(amountNum) || amountNum < 0) {
         setFieldErrors({ amountMajor: 'Must be a positive number' });
         return;
       }
-      meta = {
-        documentName: form.documentName,
-        type: form.type as 'invoice' | 'receipt',
-        invoiceDate: form.invoiceDate,
-        amount: Math.round(amountNum * 100),
-        currency: form.currency,
-        shortNote: form.shortNote || undefined,
-        note: form.note || undefined,
-      };
-    } else {
-      meta = {
-        documentName: form.documentName,
-        type: form.type as Exclude<DocumentType, 'invoice' | 'receipt'>,
-        shortNote: form.shortNote || undefined,
-        note: form.note || undefined,
-      };
+      meta.invoiceDate = form.invoiceDate;
+      meta.amount = Math.round(amountNum * 100);
+      meta.currency = form.currency;
     }
 
     setSubmitting(true);
@@ -141,12 +147,27 @@ export function UploadPage() {
         <select
           id="upload-type"
           value={form.type}
-          onChange={(e) => update('type', e.target.value as DocumentType)}
+          onChange={(e) => update('type', e.target.value)}
           style={{ width: '100%' }}
         >
-          {DOCUMENT_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {TYPE_LABEL[t]}
+          {types.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+
+        <label htmlFor="upload-category">Category</label>
+        <select
+          id="upload-category"
+          value={form.categoryId}
+          onChange={(e) => update('categoryId', e.target.value)}
+          style={{ width: '100%' }}
+        >
+          <option value="">— None —</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
             </option>
           ))}
         </select>
@@ -201,6 +222,9 @@ export function UploadPage() {
             </div>
           </div>
         )}
+
+        <label>Tags</label>
+        <TagChipInput value={tagNames} onChange={setTagNames} />
 
         <label htmlFor="upload-short-note">Short Note</label>
         <input

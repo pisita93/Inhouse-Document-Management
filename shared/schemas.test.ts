@@ -4,8 +4,6 @@ import {
   DocumentDTOSchema,
   ListQuerySchema,
   DOCUMENT_TYPES,
-  REQUIRES_FINANCIALS,
-  requiresFinancials,
 } from './schemas.js';
 
 describe('DOCUMENT_TYPES', () => {
@@ -25,15 +23,6 @@ describe('DOCUMENT_TYPES', () => {
         'other',
       ]),
     );
-  });
-});
-
-describe('deprecated requiresFinancials helpers', () => {
-  it('still resolves invoice/receipt as financial', () => {
-    expect(requiresFinancials('invoice')).toBe(true);
-    expect(requiresFinancials('receipt')).toBe(true);
-    expect(requiresFinancials('contract')).toBe(false);
-    expect(REQUIRES_FINANCIALS.has('invoice')).toBe(true);
   });
 });
 
