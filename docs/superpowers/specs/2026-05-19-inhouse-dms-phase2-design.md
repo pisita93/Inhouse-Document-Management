@@ -26,14 +26,14 @@ Phase 2 introduces user-managed metadata so a small admin group can curate the t
 
 ## Resolved decisions
 
-| # | Question | Decision |
-|---|----------|----------|
-| 1 | Category cardinality | One per doc, nullable FK on `documents` |
-| 2 | Disable a type/category | Keep existing references; hide from new uploads |
-| 3 | `requires_financial` mutability | Set at type creation, read-only after |
-| 4 | Tag input UX | Free-typed chips + server-side autocomplete; server normalizes (trim + lowercase) and creates on first use |
-| 5 | `CHECK`-constraint removal | Single atomic `004_document_types.sql` — full `documents` table rebuild inside a transaction |
-| 6 | FTS ranking | Equal weight; add `tag_names` and `category_name` columns to `documents_fts` |
+| #   | Question                        | Decision                                                                                                   |
+| --- | ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1   | Category cardinality            | One per doc, nullable FK on `documents`                                                                    |
+| 2   | Disable a type/category         | Keep existing references; hide from new uploads                                                            |
+| 3   | `requires_financial` mutability | Set at type creation, read-only after                                                                      |
+| 4   | Tag input UX                    | Free-typed chips + server-side autocomplete; server normalizes (trim + lowercase) and creates on first use |
+| 5   | `CHECK`-constraint removal      | Single atomic `004_document_types.sql` — full `documents` table rebuild inside a transaction               |
+| 6   | FTS ranking                     | Equal weight; add `tag_names` and `category_name` columns to `documents_fts`                               |
 
 ## User-visible features
 
@@ -121,6 +121,7 @@ CREATE VIRTUAL TABLE documents_fts USING fts5(
 ```
 
 Triggers cover all three sources of change:
+
 - INSERT / UPDATE / DELETE on `documents` (UPDATE trigger is new — currently missing).
 - INSERT / DELETE on `document_tags` (regenerate `tag_names` for the affected document).
 - UPDATE on `categories.name` (regenerate `category_name` for every document in that category).
@@ -163,18 +164,18 @@ The existing `ensureLedger` auto-seed (from `378b60e`) covers 001–003. It does
 
 ### New resources
 
-| Method | Path | Notes |
-|---|---|---|
-| `GET`    | `/api/tags`            | `?q=` for autocomplete (case-insensitive `LIKE`) |
-| `POST`   | `/api/tags`            | Admin: explicit create (idempotent on name) |
-| `PATCH`  | `/api/tags/:id`        | Rename |
-| `DELETE` | `/api/tags/:id`        | Cascades via FK |
-| `GET`    | `/api/categories`      | `?includeDisabled=true` for admin tab |
-| `POST`   | `/api/categories`      | |
-| `PATCH`  | `/api/categories/:id`  | Rename, reorder, toggle `disabled_at` |
-| `DELETE` | `/api/categories/:id`  | `documents.category_id` → NULL via FK |
-| `GET`    | `/api/document-types`  | `?includeDisabled=true` for admin tab |
-| `POST`   | `/api/document-types`  | `requires_financial` settable here, locked after |
+| Method   | Path                      | Notes                                                                                                                           |
+| -------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/tags`               | `?q=` for autocomplete (case-insensitive `LIKE`)                                                                                |
+| `POST`   | `/api/tags`               | Admin: explicit create (idempotent on name)                                                                                     |
+| `PATCH`  | `/api/tags/:id`           | Rename                                                                                                                          |
+| `DELETE` | `/api/tags/:id`           | Cascades via FK                                                                                                                 |
+| `GET`    | `/api/categories`         | `?includeDisabled=true` for admin tab                                                                                           |
+| `POST`   | `/api/categories`         |                                                                                                                                 |
+| `PATCH`  | `/api/categories/:id`     | Rename, reorder, toggle `disabled_at`                                                                                           |
+| `DELETE` | `/api/categories/:id`     | `documents.category_id` → NULL via FK                                                                                           |
+| `GET`    | `/api/document-types`     | `?includeDisabled=true` for admin tab                                                                                           |
+| `POST`   | `/api/document-types`     | `requires_financial` settable here, locked after                                                                                |
 | `PATCH`  | `/api/document-types/:id` | Rename, reorder, toggle `disabled_at`. **Rejects body containing `requires_financial`** with 400 `REQUIRES_FINANCIAL_IMMUTABLE` |
 
 No `DELETE` on `document_types` (FKs from `documents` would block it anyway).
@@ -182,7 +183,8 @@ No `DELETE` on `document_types` (FKs from `documents` would block it anyway).
 ### Changes to existing endpoints
 
 `POST /api/documents` (upload):
-- Body gains `categoryId?: string | null` and `tagNames?: string[]` (note: *names*, not IDs).
+
+- Body gains `categoryId?: string | null` and `tagNames?: string[]` (note: _names_, not IDs).
 - Server normalizes tag names, runs `INSERT OR IGNORE INTO tags`, then writes `document_tags`. All inside the same transaction as the document insert.
 - Validation tied to type's `requires_financial`:
   - `1` → `invoice_date`, `amount`, `currency` required (else 400 `FINANCIAL_FIELDS_REQUIRED`).
@@ -191,6 +193,7 @@ No `DELETE` on `document_types` (FKs from `documents` would block it anyway).
 - Disabled or unknown `type` → 400 `UNKNOWN_OR_DISABLED_TYPE`.
 
 `GET /api/documents` (list):
+
 - New filter params: `categoryId?`, `tagId?` (single, AND with existing filters).
 - Response items include `category: { id, name } | null` and `tags: { id, name }[]`.
 
@@ -223,10 +226,12 @@ Unchanged from Phase 1: `{ error: { code, message, fields? } }` (see `shared/sch
 ### Browse page
 
 Filter panel extends the existing Apply/Reset draft pattern with:
+
 - Category dropdown (includes "(any)").
 - Single-tag selector (chip-style).
 
 List rows gain:
+
 - Small category badge after the type chip.
 - Up to 3 tag chips inline, with "+N" when there are more.
 
@@ -245,10 +250,12 @@ Single "+ New" button per tab opens an inline modal.
 ### Zod schemas
 
 ```ts
-const TagNameSchema = z.string()
+const TagNameSchema = z
+  .string()
   .trim()
   .toLowerCase()
-  .min(1).max(40)
+  .min(1)
+  .max(40)
   .regex(/^[a-z0-9][a-z0-9 _-]*$/, 'letters, digits, space, _, - only');
 
 const CategoryNameSchema = z.string().trim().min(1).max(60);
@@ -259,7 +266,7 @@ const DocumentTypeLabelSchema = z.string().trim().min(1).max(60);
 const UploadSchema = z.object({
   // ... existing fields
   categoryId: z.string().uuid().nullish(),
-  tagNames:   z.array(TagNameSchema).max(20).optional(),
+  tagNames: z.array(TagNameSchema).max(20).optional(),
 });
 ```
 
@@ -349,3 +356,10 @@ Every admin mutation (`POST/PATCH/DELETE` on tags/categories/document-types) log
 6. Browse filter extensions (category dropdown + tag selector).
 7. FTS trigger updates so tag/category names are searchable.
 8. E2E coverage end-to-end.
+
+---
+
+## Implementation status
+
+Shipped on `main` via commits `fcad4d3..ca5a005` (Tasks 1 through 15), closed
+out by the docs commit that introduces this footer (Task 16).

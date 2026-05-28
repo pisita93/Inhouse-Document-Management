@@ -5,6 +5,12 @@ LAN-only document store covering invoices, receipts, contracts, HR documents, an
 Built with Node.js, Express, React, SQLite (FTS5).
 Deployed via Portainer on a Synology NAS.
 
+Documents are organised by **type**, **category**, and **tags**. Types and
+categories are managed in `/settings` (admin); tags are created on the fly from
+the upload form's chip input. Browse supports filtering and full-text search
+that covers names, notes, tag names, and category names. Image and PDF
+attachments preview inline on the document detail page.
+
 ## Quick start (development)
 
 ```bash
@@ -15,6 +21,22 @@ npm run dev:client                                # Vite dev at :5173 (proxies /
 ```
 
 Open http://localhost:5173.
+
+## Admin
+
+Navigate to `/settings` to manage the taxonomy in three tabs:
+
+- **Document Types** — add new types (e.g. `tax_form`, `audit_letter`) with an
+  optional **Requires Financial** flag. The flag is set at creation and is
+  read-only afterwards; flipping it would silently invalidate every document
+  already filed under the type.
+- **Categories** — create, rename, disable, or delete categories. Disabling
+  hides a category from the upload form but keeps it visible on documents that
+  already use it. Deletion clears the foreign key on attached documents rather
+  than removing the documents.
+- **Tags** — list of every tag ever attached to a document, with usage counts.
+  Tags are created on demand from the upload form's chip input (lowercased,
+  case-insensitively unique).
 
 ## Testing
 
