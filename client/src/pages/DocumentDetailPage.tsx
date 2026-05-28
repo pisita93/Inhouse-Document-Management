@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { SubBar } from '../components/SubBar.js';
 import { TypeChip } from '../components/TypeChip.js';
+import { DocumentPreview } from '../components/DocumentPreview.js';
 import { type DocumentDTO, type DocumentType } from '../types.js';
 
 export function DocumentDetailPage() {
@@ -70,6 +71,7 @@ export function DocumentDetailPage() {
         <h2 style={{ marginTop: 0 }}>
           {dto.documentName} <TypeChip type={dto.type as DocumentType} />
         </h2>
+        <DocumentPreview doc={dto} />
         <dl>
           <dt>Type</dt>
           <dd>{dto.type}</dd>

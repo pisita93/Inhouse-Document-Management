@@ -47,8 +47,23 @@ describe('GET /api/documents/:id and :id/file', () => {
     const res = await request(env.app).get(`/api/documents/${id}/file`);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/pdf/);
+    expect(res.headers['content-disposition']).toMatch(/^attachment;/);
     expect(res.headers['content-disposition']).toMatch(/orig\.pdf/);
     expect(res.body.length).toBe(env.fixtures.PDF_MIN.length);
+  });
+
+  it('serves Content-Disposition: inline when ?inline=1', async () => {
+    const id = await uploadAndGetId();
+    const res = await request(env.app).get(`/api/documents/${id}/file?inline=1`);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-disposition']).toMatch(/^inline;/);
+    expect(res.headers['content-type']).toMatch(/^application\/pdf/);
+  });
+
+  it('defaults to Content-Disposition: attachment without ?inline=1', async () => {
+    const id = await uploadAndGetId();
+    const res = await request(env.app).get(`/api/documents/${id}/file`);
+    expect(res.headers['content-disposition']).toMatch(/^attachment;/);
   });
 
   it('returns 410 FILE_GONE if DB row exists but file is missing', async () => {

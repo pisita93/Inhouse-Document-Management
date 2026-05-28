@@ -103,8 +103,8 @@ export const api = {
     return request<DocumentDTO>(`/api/documents/${id}`);
   },
 
-  fileUrl(id: string): string {
-    return `/api/documents/${id}/file`;
+  fileUrl(id: string, opts: { inline?: boolean } = {}): string {
+    return `/api/documents/${id}/file${opts.inline ? '?inline=1' : ''}`;
   },
 
   async remove(id: string): Promise<void> {

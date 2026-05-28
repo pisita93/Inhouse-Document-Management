@@ -155,9 +155,10 @@ export function documentsRouter(deps: Deps): Router {
         throw new ApiError(410, 'FILE_GONE', 'file is no longer in storage');
       }
       res.setHeader('Content-Type', dto.mimeType);
+      const disposition = req.query.inline === '1' ? 'inline' : 'attachment';
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="${dto.originalName.replace(/"/g, '')}"`,
+        `${disposition}; filename="${dto.originalName.replace(/"/g, '')}"`,
       );
       store.openStream(id, ext, dto.createdAt).pipe(res);
     } catch (e) {
