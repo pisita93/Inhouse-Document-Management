@@ -247,13 +247,11 @@ describe('migrations', () => {
 
     it('is idempotent — re-running 004 is a no-op for document_types', () => {
       runMigrations(db);
-      const before = (
-        db.prepare(`SELECT COUNT(*) AS c FROM document_types`).get() as { c: number }
-      ).c;
+      const before = (db.prepare(`SELECT COUNT(*) AS c FROM document_types`).get() as { c: number })
+        .c;
       runMigrations(db);
-      const after = (
-        db.prepare(`SELECT COUNT(*) AS c FROM document_types`).get() as { c: number }
-      ).c;
+      const after = (db.prepare(`SELECT COUNT(*) AS c FROM document_types`).get() as { c: number })
+        .c;
       expect(after).toBe(before);
     });
   });

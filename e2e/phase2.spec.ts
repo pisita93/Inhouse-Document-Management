@@ -70,7 +70,10 @@ test.describe('Phase 2 — tags, categories, document types', () => {
     const settingsRow = page.locator('tr', { hasText: categoryName });
     // Button text is "Disable" but aria-label is "disable {generated-id}". Filter by text
     // content so we don't depend on the generated id.
-    await settingsRow.locator('button').filter({ hasText: /^Disable$/ }).click();
+    await settingsRow
+      .locator('button')
+      .filter({ hasText: /^Disable$/ })
+      .click();
     await expect(settingsRow.locator('td', { hasText: 'Disabled' })).toBeVisible();
 
     await page.goto('/');

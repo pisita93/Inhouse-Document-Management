@@ -15,6 +15,7 @@
 ## Task 1: Migration 004 — schema rebuild, document_types seed, contentless FTS
 
 **Files:**
+
 - Create: `migrations/004_document_types.sql`
 - Modify: `server/test/migrations.test.ts` (extend existing suite)
 
@@ -289,8 +290,16 @@ it('accepts a row of every seeded type under the new schema', () => {
       'f.pdf', 'f.pdf', 'application/pdf', 1, datetime('now'))
   `);
   const ids = [
-    'invoice','receipt','quotation','contract','policy',
-    'hr_document','meeting_minutes','report','certificate','other',
+    'invoice',
+    'receipt',
+    'quotation',
+    'contract',
+    'policy',
+    'hr_document',
+    'meeting_minutes',
+    'report',
+    'certificate',
+    'other',
   ].map((t, i) => {
     const id = `doc-${i}`;
     insert.run(id, `name-${t}`, t);
@@ -302,8 +311,7 @@ it('accepts a row of every seeded type under the new schema', () => {
   expect(count).toBe(10);
 
   // FTS rows match
-  const ftsCount = (db.prepare(`SELECT COUNT(*) c FROM documents_fts`).get() as { c: number })
-    .c;
+  const ftsCount = (db.prepare(`SELECT COUNT(*) c FROM documents_fts`).get() as { c: number }).c;
   expect(ftsCount).toBe(10);
 
   db.close();
@@ -323,13 +331,9 @@ Append:
 it('is idempotent — re-running 004 is a no-op', () => {
   const { db, dir } = setupTempDb();
   runMigrations(db, dir);
-  const before = (
-    db.prepare(`SELECT COUNT(*) c FROM document_types`).get() as { c: number }
-  ).c;
+  const before = (db.prepare(`SELECT COUNT(*) c FROM document_types`).get() as { c: number }).c;
   runMigrations(db, dir); // second run
-  const after = (
-    db.prepare(`SELECT COUNT(*) c FROM document_types`).get() as { c: number }
-  ).c;
+  const after = (db.prepare(`SELECT COUNT(*) c FROM document_types`).get() as { c: number }).c;
   expect(after).toBe(before);
   db.close();
 });
@@ -369,6 +373,7 @@ git commit -m "feat(db): migration 004 — document_types, categories, tags, con
 ## Task 2: `document_types` repo + routes
 
 **Files:**
+
 - Create: `server/src/db/documentTypesRepo.ts`
 - Create: `server/src/routes/documentTypes.ts`
 - Create: `server/test/documentTypes.test.ts`
@@ -475,7 +480,9 @@ describe('documentTypesRepo', () => {
   });
 
   it('name uniqueness on create (case-insensitive)', () => {
-    expect(() => repo.create({ id: 'INVOICE', label: 'X', requiresFinancial: false, sortOrder: 0 })).toThrow();
+    expect(() =>
+      repo.create({ id: 'INVOICE', label: 'X', requiresFinancial: false, sortOrder: 0 }),
+    ).toThrow();
   });
 });
 ```
@@ -491,7 +498,11 @@ Create `server/src/db/documentTypesRepo.ts`:
 
 ```ts
 import type { DB } from './connection.js';
-import type { DocumentTypeDTO, DocumentTypeCreate, DocumentTypePatch } from '../../../shared/schemas.js';
+import type {
+  DocumentTypeDTO,
+  DocumentTypeCreate,
+  DocumentTypePatch,
+} from '../../../shared/schemas.js';
 
 interface Row {
   id: string;
@@ -590,7 +601,7 @@ describe('documentTypes routes', () => {
   beforeEach(() => {
     const tmp = setupTempDb();
     runMigrations(tmp.db, tmp.dir);
-    app = createApp({ db: tmp.db, /* stub fileStore as in existing route tests */ } as any);
+    app = createApp({ db: tmp.db /* stub fileStore as in existing route tests */ } as any);
   });
 
   it('GET /api/document-types lists enabled types', async () => {
@@ -639,10 +650,7 @@ Create `server/src/routes/documentTypes.ts`:
 ```ts
 import { Router } from 'express';
 import { ApiError } from '../middleware/errorHandler.js';
-import {
-  DocumentTypeCreateSchema,
-  DocumentTypePatchSchema,
-} from '../../../shared/schemas.js';
+import { DocumentTypeCreateSchema, DocumentTypePatchSchema } from '../../../shared/schemas.js';
 import type { createDocumentTypesRepo } from '../db/documentTypesRepo.js';
 
 interface Deps {
@@ -684,7 +692,11 @@ export function documentTypesRouter({ repo }: Deps): Router {
       if (!parsed.success) {
         const issue = parsed.error.issues[0];
         if (issue?.path?.[0] === 'requiresFinancial') {
-          throw new ApiError(400, 'REQUIRES_FINANCIAL_IMMUTABLE', 'requires_financial is immutable');
+          throw new ApiError(
+            400,
+            'REQUIRES_FINANCIAL_IMMUTABLE',
+            'requires_financial is immutable',
+          );
         }
         throw new ApiError(400, 'VALIDATION', issue?.message ?? 'validation error');
       }
@@ -704,6 +716,7 @@ export function documentTypesRouter({ repo }: Deps): Router {
 - [ ] **Step 9: Wire the router into `app.ts`**
 
 Modify `server/src/app.ts`:
+
 - Add import: `import { documentTypesRouter } from './routes/documentTypes.js';`
 - After `createDocumentsRepo(db)`, add `const documentTypesRepo = createDocumentTypesRepo(db);`
 - Mount: `app.use('/api/document-types', documentTypesRouter({ repo: documentTypesRepo }));`
@@ -732,6 +745,7 @@ git commit -m "feat(api): document_types repo + routes with immutable requires_f
 ## Task 3: `categories` repo + routes
 
 **Files:**
+
 - Create: `server/src/db/categoriesRepo.ts`
 - Create: `server/src/routes/categories.ts`
 - Create: `server/test/categories.test.ts`
@@ -872,6 +886,7 @@ export function createCategoriesRepo(db: DB) {
 - [ ] **Step 5: Create the router**
 
 Create `server/src/routes/categories.ts`. Pattern mirrors `documentTypes.ts` (Task 2 Step 8). Notable differences:
+
 - `POST /` body is `CategoryCreateSchema` (no `id` from client; server generates UUID).
 - `DELETE /:id` returns 204 on success, 404 if missing. No special handling for in-use rows — FK cascades `category_id` to NULL.
 - Unique violation on name → 409 `NAME_TAKEN`.
@@ -969,6 +984,7 @@ git commit -m "feat(api): categories repo + routes with delete-sets-FK-null casc
 ## Task 4: `tags` repo + routes
 
 **Files:**
+
 - Create: `server/src/db/tagsRepo.ts`
 - Create: `server/src/routes/tags.ts`
 - Create: `server/test/tags.test.ts`
@@ -1007,6 +1023,7 @@ export type TagPatch = z.infer<typeof TagPatchSchema>;
 - [ ] **Step 2: Write failing tests for repo**
 
 Create `server/test/tags.test.ts`. Cover:
+
 - `upsertByName('Finance ')` lowercases and trims to `finance`, returns the same id when called twice.
 - `list()` returns alphabetical.
 - `list({ q: 'fin' })` returns matches via `LIKE '%fin%'` case-insensitive.
@@ -1193,6 +1210,7 @@ git commit -m "feat(api): tags repo + routes with case-insensitive upsert"
 **Goal:** Replace the hard-coded `REQUIRES_FINANCIALS` set in `shared/schemas.ts` with a runtime lookup against `document_types`. Accept `categoryId` and `tagNames` on upload and persist them atomically.
 
 **Files:**
+
 - Modify: `shared/schemas.ts` — collapse the discriminated union into a single `DocumentCreateSchema` with all fields optional; financial-trio enforcement moves server-side.
 - Modify: `server/src/db/documentsRepo.ts` — accept category + tags in insert path; expose validation helpers; extend `rowToDTO`.
 - Modify: `server/src/routes/documents.ts` — call new validation flow.
@@ -1205,6 +1223,7 @@ git commit -m "feat(api): tags repo + routes with case-insensitive upsert"
 Replace the union and `requiresFinancials` export with a flat schema. The server enforces `requires_financial` at runtime.
 
 > **Client breakage window:** Removing `REQUIRES_FINANCIALS` / `requiresFinancials` from `shared/schemas.ts` will break the current `UploadPage.tsx` build, which imports those symbols. Task 12 replaces that usage with a runtime fetch. Between Task 5 and Task 12 the client workspace will not type-check. Two options:
+>
 > 1. **Land Task 5–6 server work, then immediately do Task 12 before any other client task.** Cleanest end state.
 > 2. **Keep `REQUIRES_FINANCIALS` and `requiresFinancials` as deprecated re-exports through Task 5, delete them in Task 12.** Smaller blast radius per commit; safer if work pauses between tasks.
 >
@@ -1264,6 +1283,7 @@ Also delete the existing `requiresFinancials` function — its callers (now only
 - [ ] **Step 2: Update `shared/schemas.test.ts`**
 
 The existing schema tests cover the discriminated union. Rewrite the relevant tests to verify:
+
 - Flat schema accepts upload without financial fields for any type.
 - Server enforcement (now in repo/route layer) is tested separately in Step 6.
 
@@ -1316,11 +1336,18 @@ Expected: New tests FAIL; existing tests may also fail if they relied on the old
 - [ ] **Step 5: Extend `documentsRepo.ts`**
 
 Modify `server/src/db/documentsRepo.ts`:
+
 - Update `DocumentRow` interface to include `category_id: string | null`.
 - Update `rowToDTO` to join `category` and `tags`:
 
 ```ts
-function rowToDTO(r: DocumentRow, joins: { category: { id: string; name: string } | null; tags: Array<{ id: string; name: string }> }): DocumentDTO {
+function rowToDTO(
+  r: DocumentRow,
+  joins: {
+    category: { id: string; name: string } | null;
+    tags: Array<{ id: string; name: string }>;
+  },
+): DocumentDTO {
   return {
     id: r.id,
     documentName: r.document_name,
@@ -1420,7 +1447,11 @@ if (meta.categoryId) {
 
 if (type.requiresFinancial) {
   if (!meta.invoiceDate || meta.amount === undefined || !meta.currency) {
-    throw new ApiError(400, 'FINANCIAL_FIELDS_REQUIRED', `type '${type.id}' requires invoice_date, amount, currency`);
+    throw new ApiError(
+      400,
+      'FINANCIAL_FIELDS_REQUIRED',
+      `type '${type.id}' requires invoice_date, amount, currency`,
+    );
   }
 }
 
@@ -1459,13 +1490,16 @@ insertWithRelations(input: { dto: DocumentRowInput; categoryId: string | null; t
 Wire deps in `app.ts`:
 
 ```ts
-app.use('/api/documents', documentsRouter({
-  repo: documentsRepo,
-  documentTypesRepo,
-  categoriesRepo,
-  tagsRepo,
-  store,
-}));
+app.use(
+  '/api/documents',
+  documentsRouter({
+    repo: documentsRepo,
+    documentTypesRepo,
+    categoriesRepo,
+    tagsRepo,
+    store,
+  }),
+);
 ```
 
 - [ ] **Step 7: Run; verify pass**
@@ -1485,6 +1519,7 @@ git commit -m "feat(api): runtime requires_financial + categoryId + tagNames on 
 ## Task 6: Documents list — extend filters and response with category/tags
 
 **Files:**
+
 - Modify: `shared/schemas.ts` — extend `ListQuerySchema` with `categoryId`, `tagId`.
 - Modify: `server/src/db/documentsRepo.ts` — `getById` and `list` now join category + tags into the DTO.
 - Modify: `server/test/list.test.ts` — new filter cases.
@@ -1555,14 +1590,29 @@ function buildListSQL(q: ListQuery): { sql: string; countSQL: string; params: un
     where.push('dt.tag_id = ?');
     params.push(q.tagId);
   }
-  if (q.invoiceDateFrom) { where.push('d.invoice_date >= ?'); params.push(q.invoiceDateFrom); }
-  if (q.invoiceDateTo)   { where.push('d.invoice_date <= ?'); params.push(q.invoiceDateTo); }
-  if (q.uploadDateFrom)  { where.push('d.document_date >= ?'); params.push(q.uploadDateFrom); }
-  if (q.uploadDateTo)    { where.push('d.document_date <= ?'); params.push(q.uploadDateTo); }
-  if (q.shortNote)       { where.push("d.short_note LIKE ? ESCAPE '\\'"); params.push(shortNoteToLike(q.shortNote)); }
+  if (q.invoiceDateFrom) {
+    where.push('d.invoice_date >= ?');
+    params.push(q.invoiceDateFrom);
+  }
+  if (q.invoiceDateTo) {
+    where.push('d.invoice_date <= ?');
+    params.push(q.invoiceDateTo);
+  }
+  if (q.uploadDateFrom) {
+    where.push('d.document_date >= ?');
+    params.push(q.uploadDateFrom);
+  }
+  if (q.uploadDateTo) {
+    where.push('d.document_date <= ?');
+    params.push(q.uploadDateTo);
+  }
+  if (q.shortNote) {
+    where.push("d.short_note LIKE ? ESCAPE '\\'");
+    params.push(shortNoteToLike(q.shortNote));
+  }
 
   const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const sql      = `SELECT d.* ${fromClause} ${whereClause} ${orderBy} LIMIT ? OFFSET ?`;
+  const sql = `SELECT d.* ${fromClause} ${whereClause} ${orderBy} LIMIT ? OFFSET ?`;
   const countSQL = `SELECT COUNT(DISTINCT d.id) AS c ${fromClause} ${whereClause}`;
   return { sql, countSQL, params };
 }
@@ -1591,9 +1641,7 @@ function attachJoins(rows: DocumentRow[]): DocumentDTO[] {
     tagsByDoc.set(tr.document_id, arr);
   }
 
-  const categoryIds = rows
-    .map((r) => r.category_id)
-    .filter((x): x is string => x !== null);
+  const categoryIds = rows.map((r) => r.category_id).filter((x): x is string => x !== null);
   // SQLite parses `IN ()` as a syntax error — skip the query if no doc has a category.
   const catRows =
     categoryIds.length === 0
@@ -1607,7 +1655,7 @@ function attachJoins(rows: DocumentRow[]): DocumentDTO[] {
 
   return rows.map((r) =>
     rowToDTO(r, {
-      category: r.category_id ? catById.get(r.category_id) ?? null : null,
+      category: r.category_id ? (catById.get(r.category_id) ?? null) : null,
       tags: tagsByDoc.get(r.id) ?? [],
     }),
   );
@@ -1638,6 +1686,7 @@ git commit -m "feat(api): list filters by categoryId/tagId + response carries ca
 ## Task 7: Client API extensions for tags/categories/document-types
 
 **Files:**
+
 - Modify: `client/src/api.ts` — add `tagsApi`, `categoriesApi`, `documentTypesApi`.
 - Modify: `client/src/api.test.ts` — extend with new endpoints.
 
@@ -1654,13 +1703,21 @@ describe('tagsApi', () => {
     // Verify api.tags.list() returns the parsed list.
   });
 
-  it('GET /api/tags?q=fin URL-encodes the query', async () => { /* ... */ });
+  it('GET /api/tags?q=fin URL-encodes the query', async () => {
+    /* ... */
+  });
 
-  it('POST /api/tags creates', async () => { /* ... */ });
+  it('POST /api/tags creates', async () => {
+    /* ... */
+  });
 
-  it('PATCH /api/tags/:id renames', async () => { /* ... */ });
+  it('PATCH /api/tags/:id renames', async () => {
+    /* ... */
+  });
 
-  it('DELETE /api/tags/:id deletes', async () => { /* ... */ });
+  it('DELETE /api/tags/:id deletes', async () => {
+    /* ... */
+  });
 });
 // Mirror the same shape for categoriesApi and documentTypesApi.
 ```
@@ -1715,6 +1772,7 @@ git commit -m "feat(client): api bindings for tags, categories, document_types"
 ## Task 8: Settings page scaffolding + ShellBar entry
 
 **Files:**
+
 - Create: `client/src/pages/SettingsPage.tsx`
 - Modify: `client/src/App.tsx` — add `/settings` route.
 - Modify: `client/src/components/ShellBar.tsx` — add Settings link.
@@ -1755,26 +1813,48 @@ export function SettingsPage() {
   return (
     <div className="settings-page">
       <header>
-        <h1>Settings <span className="settings-page__hint">(Admin)</span></h1>
+        <h1>
+          Settings <span className="settings-page__hint">(Admin)</span>
+        </h1>
       </header>
       <nav className="settings-page__tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'document-types'} onClick={() => setTab('document-types')}>Document Types</button>
-        <button role="tab" aria-selected={tab === 'categories'}     onClick={() => setTab('categories')}>Categories</button>
-        <button role="tab" aria-selected={tab === 'tags'}           onClick={() => setTab('tags')}>Tags</button>
+        <button
+          role="tab"
+          aria-selected={tab === 'document-types'}
+          onClick={() => setTab('document-types')}
+        >
+          Document Types
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === 'categories'}
+          onClick={() => setTab('categories')}
+        >
+          Categories
+        </button>
+        <button role="tab" aria-selected={tab === 'tags'} onClick={() => setTab('tags')}>
+          Tags
+        </button>
       </nav>
       <section role="tabpanel" className="settings-page__panel">
         {tab === 'document-types' && <DocumentTypesTab />}
-        {tab === 'categories'     && <CategoriesTab />}
-        {tab === 'tags'           && <TagsTab />}
+        {tab === 'categories' && <CategoriesTab />}
+        {tab === 'tags' && <TagsTab />}
       </section>
     </div>
   );
 }
 
 // Stub the three tab components for now — they're filled in by Tasks 9, 10, 11.
-function DocumentTypesTab() { return <p>document-types tab</p>; }
-function CategoriesTab()    { return <p>categories tab</p>; }
-function TagsTab()          { return <p>tags tab</p>; }
+function DocumentTypesTab() {
+  return <p>document-types tab</p>;
+}
+function CategoriesTab() {
+  return <p>categories tab</p>;
+}
+function TagsTab() {
+  return <p>tags tab</p>;
+}
 ```
 
 - [ ] **Step 5: Wire the route in `App.tsx`**
@@ -1802,6 +1882,7 @@ git commit -m "feat(client): /settings page with three-tab scaffolding and Shell
 ## Task 9: Document Types admin tab
 
 **Files:**
+
 - Create: `client/src/pages/settings/DocumentTypesTab.tsx`
 - Create: `client/src/pages/settings/DocumentTypesTab.test.tsx`
 - Modify: `client/src/pages/SettingsPage.tsx` — import real tab, remove stub.
@@ -1811,6 +1892,7 @@ git commit -m "feat(client): /settings page with three-tab scaffolding and Shell
 - [ ] **Step 1: Failing tests**
 
 Create `DocumentTypesTab.test.tsx` covering:
+
 - Renders rows from `documentTypesApi.list({ includeDisabled: true })`.
 - "+ New" button opens a form with editable `requires_financial` checkbox.
 - Existing rows show `requires_financial` as a read-only checkbox with a `title` of "Set at creation".
@@ -1835,21 +1917,40 @@ export function DocumentTypesTab() {
   async function reload() {
     setItems((await documentTypesApi.list({ includeDisabled: true })).items);
   }
-  useEffect(() => { reload().catch((e) => setError(String(e))); }, []);
+  useEffect(() => {
+    reload().catch((e) => setError(String(e)));
+  }, []);
 
   return (
     <div>
       {error && <p role="alert">{error}</p>}
       <table>
         <thead>
-          <tr><th>ID</th><th>Label</th><th>Requires Financial</th><th>Sort</th><th>Status</th><th>Actions</th></tr>
+          <tr>
+            <th>ID</th>
+            <th>Label</th>
+            <th>Requires Financial</th>
+            <th>Sort</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
         </thead>
         <tbody>
-          {items.map((t) => <TypeRow key={t.id} item={t} onChange={reload} onError={setError} />)}
+          {items.map((t) => (
+            <TypeRow key={t.id} item={t} onChange={reload} onError={setError} />
+          ))}
         </tbody>
       </table>
       <button onClick={() => setCreating(true)}>+ New</button>
-      {creating && <NewTypeForm onDone={() => { setCreating(false); reload(); }} onError={setError} />}
+      {creating && (
+        <NewTypeForm
+          onDone={() => {
+            setCreating(false);
+            reload();
+          }}
+          onError={setError}
+        />
+      )}
     </div>
   );
 }
@@ -1863,6 +1964,7 @@ Implement both subcomponents inline. Keep the file small enough — split into a
 - [ ] **Step 3: Update `SettingsPage.tsx`**
 
 Replace `function DocumentTypesTab() { return <p>document-types tab</p>; }` with:
+
 ```tsx
 import { DocumentTypesTab } from './settings/DocumentTypesTab';
 ```
@@ -1888,6 +1990,7 @@ git commit -m "feat(client): Document Types settings tab with immutable requires
 ## Task 10: Categories admin tab
 
 **Files:**
+
 - Create: `client/src/pages/settings/CategoriesTab.tsx`
 - Create: `client/src/pages/settings/CategoriesTab.test.tsx`
 - Modify: `client/src/pages/SettingsPage.tsx` — wire real tab.
@@ -1897,6 +2000,7 @@ git commit -m "feat(client): Document Types settings tab with immutable requires
 - [ ] **Step 1: Failing tests**
 
 Tests parallel Task 9:
+
 - Renders categories from `categoriesApi.list({ includeDisabled: true })`.
 - "+ New" creates.
 - Rename updates name.
@@ -1907,6 +2011,7 @@ Tests parallel Task 9:
 - [ ] **Step 2: Implementation**
 
 Create `CategoriesTab.tsx`. Same structure as DocumentTypesTab but:
+
 - No `requires_financial` column.
 - Has Delete button (calls `categoriesApi.remove(id)`); confirm modal.
 - Sort order editable inline (number input).
@@ -1932,6 +2037,7 @@ git commit -m "feat(client): Categories settings tab"
 ## Task 11: Tags admin tab
 
 **Files:**
+
 - Create: `client/src/pages/settings/TagsTab.tsx`
 - Create: `client/src/pages/settings/TagsTab.test.tsx`
 - Modify: `client/src/pages/SettingsPage.tsx`
@@ -1941,6 +2047,7 @@ git commit -m "feat(client): Categories settings tab"
 - [ ] **Step 1: Failing tests**
 
 Cover:
+
 - Renders tags from `tagsApi.list()`.
 - Shows usage count (from a new server endpoint OR via a `GET /api/tags` that returns counts — see Step 2 below).
 - Rename calls `tagsApi.rename`.
@@ -1986,6 +2093,7 @@ git commit -m "feat: Tags settings tab with usage counts"
 ## Task 12: Upload form — category dropdown, dynamic financial trio, tag chip input
 
 **Files:**
+
 - Modify: `client/src/pages/UploadPage.tsx`
 - Create: `client/src/components/TagChipInput.tsx`
 - Create: `client/src/components/TagChipInput.test.tsx`
@@ -1996,6 +2104,7 @@ git commit -m "feat: Tags settings tab with usage counts"
 - [ ] **Step 1: Failing tests for TagChipInput**
 
 Create `TagChipInput.test.tsx`:
+
 - Renders with empty value.
 - Typing 3 characters triggers a debounced fetch to `/api/tags?q=...`.
 - Pressing Enter on a suggestion adds it as a chip.
@@ -2055,7 +2164,9 @@ export function TagChipInput({ value, onChange }: Props) {
       {value.map((name) => (
         <span key={name} className="tag-chip">
           {name}
-          <button type="button" aria-label={`Remove ${name}`} onClick={() => removeChip(name)}>×</button>
+          <button type="button" aria-label={`Remove ${name}`} onClick={() => removeChip(name)}>
+            ×
+          </button>
         </span>
       ))}
       <input
@@ -2075,7 +2186,9 @@ export function TagChipInput({ value, onChange }: Props) {
         <ul role="listbox" className="tag-chip-input__suggestions">
           {suggestions.map((s) => (
             <li key={s} role="option">
-              <button type="button" onClick={() => addChip(s)}>{s}</button>
+              <button type="button" onClick={() => addChip(s)}>
+                {s}
+              </button>
             </li>
           ))}
         </ul>
@@ -2093,6 +2206,7 @@ Expected: All PASS.
 - [ ] **Step 4: Failing tests for UploadPage integration**
 
 Update upload tests to assert:
+
 - Type dropdown is populated from `documentTypesApi.list()` (mock that call).
 - When type with `requiresFinancial: true` is selected, financial trio fields appear.
 - When type with `requiresFinancial: false` is selected, financial trio is hidden.
@@ -2127,6 +2241,7 @@ git commit -m "feat(client): upload form — dynamic financial trio + category +
 ## Task 13: Browse page — category filter + tag filter + row badges
 
 **Files:**
+
 - Modify: `client/src/pages/BrowsePage.tsx`
 - Modify: `client/src/components/FilterDrawer.tsx`
 - Modify: corresponding test files.
@@ -2136,6 +2251,7 @@ git commit -m "feat(client): upload form — dynamic financial trio + category +
 - [ ] **Step 1: Failing tests**
 
 Add to the existing browse/filter test files:
+
 - FilterDrawer renders a Category dropdown and a single-Tag selector.
 - Apply applies category/tag filter to the list query.
 - Reset clears them along with existing fields.
@@ -2144,12 +2260,14 @@ Add to the existing browse/filter test files:
 - [ ] **Step 2: Implementation**
 
 Update `FilterDrawer.tsx`:
+
 - Add `categoryId?: string` and `tagId?: string` to the draft/applied filter shape.
 - Add a `<select>` for category (populated from `categoriesApi.list()`).
 - Add a single-tag selector — reuse `TagChipInput` but constrained to a single chip (cap at 1, no autocomplete on add).
 - Pass the new values through Apply/Reset.
 
 Update `BrowsePage.tsx`:
+
 - Pass `categoryId` and `tagId` into the list query params.
 - In each row, render a category badge after the type chip if `item.category` is non-null.
 - Render up to 3 of `item.tags` as small chips, with "+N more" if `item.tags.length > 3`.
@@ -2179,6 +2297,7 @@ git commit -m "feat(client): browse filters by category/tag + row badges"
 **Depends on:** Tasks 5/6 — the test fixture in Step 7 assumes the post-Task-6 `DocumentDTO` shape (carries `category` and `tags`).
 
 **Files:**
+
 - Modify: `server/src/routes/documents.ts` — accept `?inline=1` on the file-serving route and switch `Content-Disposition` accordingly.
 - Modify: `server/test/detail-and-download.test.ts` — tighten existing assertion + add inline-mode tests.
 - Modify: `client/src/api.ts` — extend `fileUrl` with an `{ inline }` option.
@@ -2192,6 +2311,7 @@ git commit -m "feat(client): browse filters by category/tag + row badges"
 - [ ] **Step 1: Confirm shape of the file route**
 
 Read `server/src/routes/documents.ts:107-125`. Confirm:
+
 - Path is `GET /api/documents/:id/file`.
 - `Content-Disposition` is set on line 119 with `attachment; filename="..."`.
 - Filename is escaped via `dto.originalName.replace(/"/g, '')`.
@@ -2203,12 +2323,14 @@ The new code MUST preserve that escape pattern in both branches — do not intro
 Modify `server/test/detail-and-download.test.ts`:
 
 **(a)** Inside `it('streams file with Content-Disposition', ...)` (line 45), tighten line 50:
+
 ```ts
 expect(res.headers['content-disposition']).toMatch(/^attachment;/);
 expect(res.headers['content-disposition']).toMatch(/orig\.pdf/);
 ```
 
 **(b)** Append two new tests **inside the existing `describe` block** so they share `beforeEach`/`afterEach` and have access to `uploadAndGetId()` / `env`:
+
 ```ts
 it('serves Content-Disposition: inline when ?inline=1', async () => {
   const id = await uploadAndGetId();
@@ -2233,6 +2355,7 @@ Expected: FAIL — the inline test sees `attachment;`.
 - [ ] **Step 4: Implement inline support**
 
 In `server/src/routes/documents.ts` at lines 117–120, replace the static disposition with a query-flag branch (keep the existing `.replace(/"/g, '')` escape — do not switch to `encodeURIComponent`):
+
 ```ts
 const disposition = req.query.inline === '1' ? 'inline' : 'attachment';
 res.setHeader(
@@ -2251,6 +2374,7 @@ Expected: All 5 assertions in this file pass; existing tests still green.
 - [ ] **Step 6: Extend `api.fileUrl`**
 
 In `client/src/api.ts:80-82`, extend the helper to support an optional `inline` flag (the default keeps existing call sites unchanged):
+
 ```ts
 fileUrl(id: string, opts: { inline?: boolean } = {}): string {
   return `/api/documents/${id}/file${opts.inline ? '?inline=1' : ''}`;
@@ -2262,6 +2386,7 @@ The existing call at `DocumentDetailPage.tsx:104` (`api.fileUrl(dto.id)`) keeps 
 - [ ] **Step 7: Failing tests for DocumentPreview**
 
 Create `client/src/components/DocumentPreview.test.tsx`:
+
 ```tsx
 import { render, screen } from '@testing-library/react';
 import { DocumentPreview } from './DocumentPreview';
@@ -2332,6 +2457,7 @@ Expected: FAIL — module missing.
 - [ ] **Step 9: Implement DocumentPreview**
 
 Create `client/src/components/document-preview.css`:
+
 ```css
 .document-preview--image img {
   max-width: 100%;
@@ -2347,6 +2473,7 @@ Create `client/src/components/document-preview.css`:
 ```
 
 Create `client/src/components/DocumentPreview.tsx`:
+
 ```tsx
 import { api } from '../api.js';
 import type { DocumentDTO } from '../types.js';
@@ -2354,12 +2481,7 @@ import './document-preview.css';
 
 // Intentionally narrow allow-list. image/svg+xml is excluded because SVG can carry <script>
 // and inline rendering would execute it under the app's origin.
-const PREVIEWABLE_IMAGE_TYPES = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/gif',
-  'image/webp',
-]);
+const PREVIEWABLE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
 interface Props {
   doc: DocumentDTO;
@@ -2396,11 +2518,13 @@ export function DocumentPreview({ doc }: Props) {
 In `client/src/pages/DocumentDetailPage.tsx`:
 
 (a) Add the import near the existing ones:
+
 ```ts
 import { DocumentPreview } from '../components/DocumentPreview.js';
 ```
 
 (b) Inside the card, immediately after the `<h2>` (line 72) and before the `<dl>`, mount:
+
 ```tsx
 <DocumentPreview doc={dto} />
 ```
@@ -2415,6 +2539,7 @@ Expected: 5 PASS. Then `npm --workspace client test` to confirm no other client 
 - [ ] **Step 12: Manual smoke check**
 
 Dev servers up. Upload three test files: a PNG, a PDF, and a non-previewable type (e.g., `.docx`). Open each detail page:
+
 - Image: renders inline, fits within the 720-wide card, no scroll bars on the image itself.
 - PDF: browser's native PDF viewer appears in the iframe; scroll/zoom works.
 - Non-previewable: no preview block; existing `Download original` link still works.
@@ -2433,6 +2558,7 @@ git commit -m "feat: inline preview for PDF and image documents on detail page"
 ## Task 15: Playwright E2E coverage
 
 **Files:**
+
 - Modify or create: `e2e/phase2.spec.ts` (or extend an existing spec file)
 
 ### Steps
@@ -2449,7 +2575,9 @@ Create `e2e/phase2.spec.ts`:
 import { test, expect } from '@playwright/test';
 
 test.describe('Phase 2 — tags, categories, document types', () => {
-  test('admin creates a category and a tag, uploads with both, sees on browse', async ({ page }) => {
+  test('admin creates a category and a tag, uploads with both, sees on browse', async ({
+    page,
+  }) => {
     // 1. Go to /settings → Categories tab → "+ New" → enter "Finance" → save
     // 2. Tags tab → "+ New" → enter "Q2-2026" → save
     // 3. Go to /upload → fill form: type=Invoice, document_name, financial trio, category=Finance, tag=Q2-2026
@@ -2457,14 +2585,18 @@ test.describe('Phase 2 — tags, categories, document types', () => {
     // 5. Go to /browse → see new row with category badge "Finance" and tag chip "q2-2026"
   });
 
-  test('admin disables a category, it disappears from upload but stays on existing docs', async ({ page }) => {
+  test('admin disables a category, it disappears from upload but stays on existing docs', async ({
+    page,
+  }) => {
     // 1. Pre-seed via API or repeat the create flow.
     // 2. Disable category.
     // 3. Upload form's category dropdown no longer offers it.
     // 4. Browse list still shows the badge on the prior document.
   });
 
-  test('admin creates a document type with requires_financial=true; UI behaves accordingly', async ({ page }) => {
+  test('admin creates a document type with requires_financial=true; UI behaves accordingly', async ({
+    page,
+  }) => {
     // 1. Settings → Document Types → "+ New" → id=tax_form, label="Tax Form", requires_financial=checked → save
     // 2. /upload → choose Tax Form → financial trio appears
     // 3. PATCH attempt via UI to flip requires_financial → input is read-only with locked-icon
@@ -2494,6 +2626,7 @@ git commit -m "test(e2e): Phase 2 admin + upload + browse flows"
 ## Task 16: Docs update — README + admin guidance
 
 **Files:**
+
 - Modify: `README.md`
 - Modify (optional): `docs/superpowers/specs/2026-05-19-inhouse-dms-phase2-design.md` — append a "Shipped in commit range X..Y" footer
 
@@ -2502,6 +2635,7 @@ git commit -m "test(e2e): Phase 2 admin + upload + browse flows"
 - [ ] **Step 1: Find the README section that lists features**
 
 Read `README.md` to locate the feature list (or the section that introduces the app). The change is small — one short paragraph or three bullets:
+
 - Document types are now configurable in `/settings` (admin-only).
 - Categories and tags can be attached to documents and used as filters.
 - The "Requires financial fields" flag is set when a type is created and cannot be changed afterwards.
@@ -2543,6 +2677,7 @@ Expected: All passing.
 - [ ] **Manual smoke pass**
 
 Dev servers up. Walk through every user-visible feature listed in the spec:
+
 - Admin manages all three resource types in `/settings`.
 - Upload with new fields works for both financial and non-financial types.
 - Browse filters and badges work.
