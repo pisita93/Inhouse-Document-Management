@@ -33,34 +33,34 @@ Separately, the 25 MB size cap is too small for longer recordings and video.
 All byte-detectable by the installed `file-type` v19.6.0. The server's allow-list
 is keyed on the **MIME the sniffer actually returns**, not the file extension.
 
-| Format    | Detected MIME(s)                            | Inline playable? |
-| --------- | ------------------------------------------- | ---------------- |
-| MP3       | `audio/mpeg`                                | Yes              |
-| M4A / AAC | `audio/mp4`, `audio/x-m4a`, `audio/aac`     | Yes              |
-| WAV       | `audio/wav`                                 | Yes              |
-| OGG       | `audio/ogg`                                 | Yes              |
-| Opus      | `audio/ogg` (ext `opus`)                    | Yes              |
-| FLAC      | `audio/x-flac`                              | Yes              |
-| AIFF      | `audio/aiff`                                | No → download    |
-| WMA       | `audio/x-ms-asf`                            | No → download    |
-| AMR       | `audio/amr`                                 | No → download    |
+| Format    | Detected MIME(s)                        | Inline playable? |
+| --------- | --------------------------------------- | ---------------- |
+| MP3       | `audio/mpeg`                            | Yes              |
+| M4A / AAC | `audio/mp4`, `audio/x-m4a`, `audio/aac` | Yes              |
+| WAV       | `audio/wav`                             | Yes              |
+| OGG       | `audio/ogg`                             | Yes              |
+| Opus      | `audio/ogg` (ext `opus`)                | Yes              |
+| FLAC      | `audio/x-flac`                          | Yes              |
+| AIFF      | `audio/aiff`                            | No → download    |
+| WMA       | `audio/x-ms-asf`                        | No → download    |
+| AMR       | `audio/amr`                             | No → download    |
 
 ## Allowed Video Formats
 
-| Format       | Detected MIME(s)              | Inline playable? |
-| ------------ | ---------------------------- | ---------------- |
-| MP4          | `video/mp4`                  | Yes              |
-| M4V          | `video/x-m4v`                | Yes              |
-| MOV (iPhone) | `video/quicktime`            | Yes (H.264 MOV)  |
-| WebM         | `video/webm`                 | Yes              |
-| OGV          | `video/ogg`                  | Yes              |
-| MPEG         | `video/mpeg`                 | No → download    |
-| AVI          | `video/vnd.avi`              | No → download    |
-| MKV          | `video/x-matroska`           | No → download    |
-| FLV          | `video/x-flv`                | No → download    |
-| 3GP          | `video/3gpp`, `video/3gpp2`  | No → download    |
-| TS           | `video/mp2t`                 | No → download    |
-| WMV          | `video/x-ms-asf`             | No → download    |
+| Format       | Detected MIME(s)            | Inline playable? |
+| ------------ | --------------------------- | ---------------- |
+| MP4          | `video/mp4`                 | Yes              |
+| M4V          | `video/x-m4v`               | Yes              |
+| MOV (iPhone) | `video/quicktime`           | Yes (H.264 MOV)  |
+| WebM         | `video/webm`                | Yes              |
+| OGV          | `video/ogg`                 | Yes              |
+| MPEG         | `video/mpeg`                | No → download    |
+| AVI          | `video/vnd.avi`             | No → download    |
+| MKV          | `video/x-matroska`          | No → download    |
+| FLV          | `video/x-flv`               | No → download    |
+| 3GP          | `video/3gpp`, `video/3gpp2` | No → download    |
+| TS           | `video/mp2t`                | No → download    |
+| WMV          | `video/x-ms-asf`            | No → download    |
 
 **ASF ambiguity resolved:** `file-type` returns `audio/x-ms-asf` for WMA and
 `video/x-ms-asf` for WMV based on the actual stream content, so the two are

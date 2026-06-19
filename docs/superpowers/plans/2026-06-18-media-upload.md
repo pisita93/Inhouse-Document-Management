@@ -19,12 +19,15 @@
 - Spec: `docs/superpowers/specs/2026-06-18-media-upload-design.md`.
 
 ### Audio MIMEs to allow
+
 `audio/mpeg`, `audio/mp4`, `audio/x-m4a`, `audio/aac`, `audio/wav`, `audio/ogg`, `audio/x-flac`, `audio/aiff`, `audio/x-ms-asf`, `audio/amr`
 
 ### Video MIMEs to allow
+
 `video/mp4`, `video/x-m4v`, `video/quicktime`, `video/webm`, `video/ogg`, `video/mpeg`, `video/vnd.avi`, `video/x-matroska`, `video/x-flv`, `video/3gpp`, `video/3gpp2`, `video/mp2t`, `video/x-ms-asf`
 
 ### Browser-playable (inline) subsets
+
 - Audio: `audio/mpeg`, `audio/mp4`, `audio/x-m4a`, `audio/aac`, `audio/wav`, `audio/ogg`, `audio/x-flac`
 - Video: `video/mp4`, `video/x-m4v`, `video/quicktime`, `video/webm`, `video/ogg`
 
@@ -47,12 +50,14 @@
 ## Task 1: Server media allow-list, 200 MB limit, ext from sniffer
 
 **Files:**
+
 - Modify: `server/src/middleware/upload.ts`
 - Modify: `server/test/helpers.ts`
 - Create: `server/test/sniff.test.ts`
 - Modify: `server/test/upload.test.ts`
 
 **Interfaces:**
+
 - Consumes: `fileTypeFromBuffer` from `file-type`; `ApiError` from `./errorHandler.js`.
 - Produces:
   - `ALLOWED_MIME: Set<string>` — now includes all audio/video MIMEs above plus the existing `application/pdf`, `image/jpeg`, `image/png`.
@@ -67,8 +72,17 @@ In `server/test/helpers.ts`, add these constants next to the existing `PNG_1x1` 
 ```ts
 // Minimal RIFF/WAVE header → file-type detects audio/wav.
 const WAV_MIN = Buffer.from(
-  '52494646' + '24000000' + '57415645' + '666d7420' + '10000000' +
-    '01000100' + '44ac0000' + '10b10200' + '04001000' + '64617461' + '00000000',
+  '52494646' +
+    '24000000' +
+    '57415645' +
+    '666d7420' +
+    '10000000' +
+    '01000100' +
+    '44ac0000' +
+    '10b10200' +
+    '04001000' +
+    '64617461' +
+    '00000000',
   'hex',
 );
 
@@ -77,15 +91,27 @@ const MP3_MIN = Buffer.from('fffb90640000000000000000000000000000', 'hex');
 
 // ISO-BMFF ftyp box, brand 'M4A ' → file-type detects audio/x-m4a.
 const M4A_MIN = Buffer.from(
-  '00000020' + '66747970' + '4d344120' + '00000200' +
-    '4d344120' + '6d703432' + '69736f6d' + '00000000',
+  '00000020' +
+    '66747970' +
+    '4d344120' +
+    '00000200' +
+    '4d344120' +
+    '6d703432' +
+    '69736f6d' +
+    '00000000',
   'hex',
 );
 
 // ISO-BMFF ftyp box, brand 'isom' → file-type detects video/mp4.
 const MP4_MIN = Buffer.from(
-  '00000020' + '66747970' + '69736f6d' + '00000200' +
-    '69736f6d' + '69736f32' + '6d703431' + '00000000',
+  '00000020' +
+    '66747970' +
+    '69736f6d' +
+    '00000200' +
+    '69736f6d' +
+    '69736f32' +
+    '6d703431' +
+    '00000000',
   'hex',
 );
 ```
@@ -114,6 +140,7 @@ for (const [k,v] of Object.entries(F)) console.log(k, await fileTypeFromBuffer(B
 ```
 
 Expected (mime is what matters; ext may vary):
+
 ```
 WAV { ext: 'wav', mime: 'audio/wav' }
 MP3 { ext: 'mp3', mime: 'audio/mpeg' }
@@ -261,25 +288,25 @@ Expected: PASS (all 6 cases).
 In `server/test/upload.test.ts`, add these two tests inside the `describe('POST /api/documents')` block (after the existing `'uploads contract → 201...'` test):
 
 ```ts
-  it('uploads an audio file (WAV) → 201 and stores it', async () => {
-    const res = await request(env.app)
-      .post('/api/documents')
-      .field('metadata', JSON.stringify(validContract))
-      .attach('file', env.fixtures.WAV_MIN, 'memo.wav');
-    expect(res.status).toBe(201);
-    expect(res.body.mimeType).toBe('audio/wav');
-    expect(res.body.filename).toMatch(/\.wav$/);
-  });
+it('uploads an audio file (WAV) → 201 and stores it', async () => {
+  const res = await request(env.app)
+    .post('/api/documents')
+    .field('metadata', JSON.stringify(validContract))
+    .attach('file', env.fixtures.WAV_MIN, 'memo.wav');
+  expect(res.status).toBe(201);
+  expect(res.body.mimeType).toBe('audio/wav');
+  expect(res.body.filename).toMatch(/\.wav$/);
+});
 
-  it('uploads a video file (MP4) → 201 and stores it', async () => {
-    const res = await request(env.app)
-      .post('/api/documents')
-      .field('metadata', JSON.stringify(validContract))
-      .attach('file', env.fixtures.MP4_MIN, 'clip.mp4');
-    expect(res.status).toBe(201);
-    expect(res.body.mimeType).toBe('video/mp4');
-    expect(res.body.filename).toMatch(/\.mp4$/);
-  });
+it('uploads a video file (MP4) → 201 and stores it', async () => {
+  const res = await request(env.app)
+    .post('/api/documents')
+    .field('metadata', JSON.stringify(validContract))
+    .attach('file', env.fixtures.MP4_MIN, 'clip.mp4');
+  expect(res.status).toBe(201);
+  expect(res.body.mimeType).toBe('video/mp4');
+  expect(res.body.filename).toMatch(/\.mp4$/);
+});
 ```
 
 - [ ] **Step 8: Run the full server test suite**
@@ -305,10 +332,12 @@ git commit -m "feat(server): accept audio/video uploads and raise limit to 200 M
 ## Task 2: Client Dropzone — extensions, accept hints, copy
 
 **Files:**
+
 - Modify: `client/src/components/Dropzone.tsx`
 - Modify: `client/src/components/Dropzone.test.tsx`
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: `Dropzone` now accepts media extensions client-side; reject message text changes to "Unsupported file type".
 
@@ -394,27 +423,25 @@ const ALLOWED_EXT = [
 Update the reject message (currently `setError('Only PDF, JPG, PNG accepted');`):
 
 ```ts
-      setError('Unsupported file type');
+setError('Unsupported file type');
 ```
 
 Update the prompt copy paragraph (currently `or click to browse — PDF, JPG, PNG`):
 
 ```tsx
-        <p style={{ fontSize: 13, opacity: 0.6 }}>
-          or click to browse — documents, images, audio, video
-        </p>
+<p style={{ fontSize: 13, opacity: 0.6 }}>or click to browse — documents, images, audio, video</p>
 ```
 
 Update the drop-prompt line (currently `Drag &amp; drop receipt here`):
 
 ```tsx
-        <p>Drag &amp; drop a file here</p>
+<p>Drag &amp; drop a file here</p>
 ```
 
 Update the `<input accept>` attribute (currently `accept=".pdf,.jpg,.jpeg,.png"`):
 
 ```tsx
-        accept=".pdf,.jpg,.jpeg,.png,audio/*,video/*"
+accept = '.pdf,.jpg,.jpeg,.png,audio/*,video/*';
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
@@ -436,11 +463,13 @@ git commit -m "feat(client): accept audio/video files in the upload dropzone"
 ## Task 3: DocumentPreview — inline audio/video players + fallback
 
 **Files:**
+
 - Modify: `client/src/components/DocumentPreview.tsx`
 - Modify: `client/src/components/DocumentPreview.test.tsx`
 - Modify: `client/src/components/document-preview.css`
 
 **Interfaces:**
+
 - Consumes: `api.fileUrl(id, { inline })` (existing); `DocumentDTO` (existing).
 - Produces: `DocumentPreview` renders `<audio controls>` for playable audio MIMEs, `<video controls>` for playable video MIMEs, and a "no inline preview" download fallback for other audio/video MIMEs. Image/PDF/SVG behavior unchanged.
 
@@ -618,6 +647,7 @@ npm test
 npm run typecheck
 npm run format:check
 ```
+
 Expected: all pass.
 
 - [ ] **Step 2: Manual smoke (optional but recommended)**
