@@ -6,6 +6,27 @@ import './document-preview.css';
 // and inline rendering would execute it under the app's origin.
 const PREVIEWABLE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
+const PLAYABLE_AUDIO_TYPES = new Set([
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/aac',
+  'audio/wav',
+  'audio/ogg',
+  'audio/x-flac',
+]);
+
+const PLAYABLE_VIDEO_TYPES = new Set([
+  'video/mp4',
+  'video/x-m4v',
+  'video/quicktime',
+  'video/webm',
+  'video/ogg',
+]);
+
+const isMediaType = (mime: string): boolean =>
+  mime.startsWith('audio/') || mime.startsWith('video/');
+
 interface Props {
   doc: DocumentDTO;
 }
@@ -25,6 +46,33 @@ export function DocumentPreview({ doc }: Props) {
     return (
       <div className="document-preview document-preview--pdf">
         <iframe src={inlineSrc} title={doc.originalName || 'PDF preview'} />
+      </div>
+    );
+  }
+
+  if (PLAYABLE_AUDIO_TYPES.has(doc.mimeType)) {
+    return (
+      <div className="document-preview document-preview--audio">
+        <audio controls src={inlineSrc}>
+          {doc.originalName}
+        </audio>
+      </div>
+    );
+  }
+
+  if (PLAYABLE_VIDEO_TYPES.has(doc.mimeType)) {
+    return (
+      <div className="document-preview document-preview--video">
+        <video controls src={inlineSrc} />
+      </div>
+    );
+  }
+
+  if (isMediaType(doc.mimeType)) {
+    return (
+      <div className="document-preview document-preview--fallback">
+        <p>No inline preview available for this file type.</p>
+        <a href={api.fileUrl(doc.id)}>Download {doc.originalName || 'file'}</a>
       </div>
     );
   }

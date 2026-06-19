@@ -9,3 +9,11 @@
   height: 80vh;
   border: 0;
 }
+.document-preview--audio audio {
+  width: 100%;
+}
+.document-preview--video video {
+  width: 100%;
+  max-height: 80vh;
+  display: block;
+}
