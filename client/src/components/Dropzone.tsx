@@ -1,6 +1,39 @@
 import { useRef, useState } from 'react';
 
-const ALLOWED_EXT = ['.pdf', '.jpg', '.jpeg', '.png'];
+const ALLOWED_EXT = [
+  '.pdf',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  // audio
+  '.mp3',
+  '.m4a',
+  '.aac',
+  '.wav',
+  '.ogg',
+  '.oga',
+  '.opus',
+  '.flac',
+  '.aif',
+  '.aiff',
+  '.wma',
+  '.amr',
+  // video
+  '.mp4',
+  '.m4v',
+  '.mov',
+  '.webm',
+  '.ogv',
+  '.mpg',
+  '.mpeg',
+  '.avi',
+  '.mkv',
+  '.flv',
+  '.3gp',
+  '.3g2',
+  '.ts',
+  '.wmv',
+];
 
 export function Dropzone({ onFile }: { onFile: (file: File) => void }) {
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +45,7 @@ export function Dropzone({ onFile }: { onFile: (file: File) => void }) {
     const file = files[0]!;
     const lower = file.name.toLowerCase();
     if (!ALLOWED_EXT.some((ext) => lower.endsWith(ext))) {
-      setError('Only PDF, JPG, PNG accepted');
+      setError('Unsupported file type');
       return;
     }
     onFile(file);
@@ -38,13 +71,15 @@ export function Dropzone({ onFile }: { onFile: (file: File) => void }) {
         }}
       >
         <div style={{ fontSize: 28, opacity: 0.5 }}>📄</div>
-        <p>Drag &amp; drop receipt here</p>
-        <p style={{ fontSize: 13, opacity: 0.6 }}>or click to browse — PDF, JPG, PNG</p>
+        <p>Drag &amp; drop a file here</p>
+        <p style={{ fontSize: 13, opacity: 0.6 }}>
+          or click to browse — documents, images, audio, video
+        </p>
       </div>
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.jpg,.jpeg,.png"
+        accept=".pdf,.jpg,.jpeg,.png,audio/*,video/*"
         style={{ display: 'none' }}
         onChange={(e) => handleFiles(e.target.files)}
       />

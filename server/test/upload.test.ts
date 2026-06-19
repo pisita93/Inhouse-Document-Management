@@ -55,6 +55,26 @@ describe('POST /api/documents', () => {
     expect(res.body.tags).toEqual([]);
   });
 
+  it('uploads an audio file (WAV) → 201 and stores it', async () => {
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field('metadata', JSON.stringify(validContract))
+      .attach('file', env.fixtures.WAV_MIN, 'memo.wav');
+    expect(res.status).toBe(201);
+    expect(res.body.mimeType).toBe('audio/wav');
+    expect(res.body.filename).toMatch(/\.wav$/);
+  });
+
+  it('uploads a video file (MP4) → 201 and stores it', async () => {
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field('metadata', JSON.stringify(validContract))
+      .attach('file', env.fixtures.MP4_MIN, 'clip.mp4');
+    expect(res.status).toBe(201);
+    expect(res.body.mimeType).toBe('video/mp4');
+    expect(res.body.filename).toMatch(/\.mp4$/);
+  });
+
   it('rejects invoice without financial trio (FINANCIAL_FIELDS_REQUIRED)', async () => {
     const bad = { ...validInvoice } as Record<string, unknown>;
     delete bad.amount;

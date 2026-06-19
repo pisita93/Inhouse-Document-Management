@@ -22,6 +22,51 @@ const PDF_MIN = Buffer.from(
     'trailer\n<</Root 1 0 R>>\nstartxref\n47\n%%EOF',
 );
 
+// Minimal RIFF/WAVE header → file-type detects audio/wav.
+const WAV_MIN = Buffer.from(
+  '52494646' +
+    '24000000' +
+    '57415645' +
+    '666d7420' +
+    '10000000' +
+    '01000100' +
+    '44ac0000' +
+    '10b10200' +
+    '04001000' +
+    '64617461' +
+    '00000000',
+  'hex',
+);
+
+// MPEG-1 Layer III frame sync (0xFFFB) → file-type detects audio/mpeg.
+const MP3_MIN = Buffer.from('fffb90640000000000000000000000000000', 'hex');
+
+// ISO-BMFF ftyp box, brand 'M4A ' → file-type detects audio/x-m4a.
+const M4A_MIN = Buffer.from(
+  '00000020' +
+    '66747970' +
+    '4d344120' +
+    '00000200' +
+    '4d344120' +
+    '6d703432' +
+    '69736f6d' +
+    '00000000',
+  'hex',
+);
+
+// ISO-BMFF ftyp box, brand 'isom' → file-type detects video/mp4.
+const MP4_MIN = Buffer.from(
+  '00000020' +
+    '66747970' +
+    '69736f6d' +
+    '00000200' +
+    '69736f6d' +
+    '69736f32' +
+    '6d703431' +
+    '00000000',
+  'hex',
+);
+
 export interface MakeTestEnvOptions {
   testResetEnabled?: boolean;
 }
@@ -58,6 +103,6 @@ export function makeTestEnv(opts: MakeTestEnvOptions = {}) {
       db.close();
       fs.rmSync(tmp, { recursive: true, force: true });
     },
-    fixtures: { PNG_1x1, PDF_MIN },
+    fixtures: { PNG_1x1, PDF_MIN, WAV_MIN, MP3_MIN, M4A_MIN, MP4_MIN },
   };
 }

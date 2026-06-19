@@ -60,4 +60,33 @@ describe('DocumentPreview', () => {
     render(<DocumentPreview doc={{ ...baseDoc, originalName: '' }} />);
     expect(screen.getByTitle('PDF preview')).toBeTruthy();
   });
+
+  it('renders an <audio> player for playable audio MIME types', () => {
+    const { container } = render(
+      <DocumentPreview doc={{ ...baseDoc, mimeType: 'audio/mpeg', originalName: 'memo.mp3' }} />,
+    );
+    const audio = container.querySelector('audio');
+    expect(audio).not.toBeNull();
+    expect(audio!.getAttribute('src')).toBe('/api/documents/doc-1/file?inline=1');
+  });
+
+  it('renders a <video> player for playable video MIME types', () => {
+    const { container } = render(
+      <DocumentPreview doc={{ ...baseDoc, mimeType: 'video/mp4', originalName: 'clip.mp4' }} />,
+    );
+    const video = container.querySelector('video');
+    expect(video).not.toBeNull();
+    expect(video!.getAttribute('src')).toBe('/api/documents/doc-1/file?inline=1');
+  });
+
+  it('renders a download fallback (no media element) for non-playable media types', () => {
+    const { container } = render(
+      <DocumentPreview doc={{ ...baseDoc, mimeType: 'video/x-matroska', originalName: 'v.mkv' }} />,
+    );
+    expect(container.querySelector('audio')).toBeNull();
+    expect(container.querySelector('video')).toBeNull();
+    const link = container.querySelector('a');
+    expect(link).not.toBeNull();
+    expect(link!.getAttribute('href')).toBe('/api/documents/doc-1/file');
+  });
 });

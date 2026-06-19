@@ -17,13 +17,28 @@ describe('Dropzone', () => {
     expect(onFile).toHaveBeenCalledWith(file);
   });
 
+  it('accepts an audio file (.m4a)', () => {
+    const onFile = vi.fn();
+    render(<Dropzone onFile={onFile} />);
+    const file = new File(['x'], 'memo.m4a', { type: 'audio/mp4' });
+    fireEvent.drop(screen.getByTestId('dropzone'), { dataTransfer: { files: [file] } });
+    expect(onFile).toHaveBeenCalledWith(file);
+  });
+
+  it('accepts a video file (.mp4)', () => {
+    const onFile = vi.fn();
+    render(<Dropzone onFile={onFile} />);
+    const file = new File(['x'], 'clip.mp4', { type: 'video/mp4' });
+    fireEvent.drop(screen.getByTestId('dropzone'), { dataTransfer: { files: [file] } });
+    expect(onFile).toHaveBeenCalledWith(file);
+  });
+
   it('rejects files with disallowed extensions', () => {
     const onFile = vi.fn();
     render(<Dropzone onFile={onFile} />);
     const file = new File(['x'], 'a.exe', { type: 'application/x-msdownload' });
-    const zone = screen.getByTestId('dropzone');
-    fireEvent.drop(zone, { dataTransfer: { files: [file] } });
+    fireEvent.drop(screen.getByTestId('dropzone'), { dataTransfer: { files: [file] } });
     expect(onFile).not.toHaveBeenCalled();
-    expect(screen.getByText(/Only PDF, JPG, PNG/i)).toBeTruthy();
+    expect(screen.getByText(/Unsupported file type/i)).toBeTruthy();
   });
 });
