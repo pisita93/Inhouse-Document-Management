@@ -80,7 +80,7 @@ export function documentsRouter(deps: Deps): Router {
           }
         }
 
-        const { mime, ext } = await sniffOrThrow(file.buffer);
+        const { mime, ext } = await sniffOrThrow(file.buffer, file.originalname);
 
         const id = uuidv4();
         const now = new Date().toISOString();

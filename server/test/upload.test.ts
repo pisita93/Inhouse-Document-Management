@@ -75,6 +75,24 @@ describe('POST /api/documents', () => {
     expect(res.body.filename).toMatch(/\.mp4$/);
   });
 
+  it('uploads a .txt file → 201, stored as text/plain', async () => {
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field('metadata', JSON.stringify(validContract))
+      .attach('file', Buffer.from('meeting notes\n- item one\n- item two'), 'notes.txt');
+    expect(res.status).toBe(201);
+    expect(res.body.mimeType).toBe('text/plain');
+    expect(res.body.filename).toMatch(/\.txt$/);
+  });
+
+  it('rejects a .txt-named file with binary content → 415', async () => {
+    const res = await request(env.app)
+      .post('/api/documents')
+      .field('metadata', JSON.stringify(validContract))
+      .attach('file', Buffer.from([0x00, 0x01, 0x02, 0xff]), 'evil.txt');
+    expect(res.status).toBe(415);
+  });
+
   it('rejects invoice without financial trio (FINANCIAL_FIELDS_REQUIRED)', async () => {
     const bad = { ...validInvoice } as Record<string, unknown>;
     delete bad.amount;

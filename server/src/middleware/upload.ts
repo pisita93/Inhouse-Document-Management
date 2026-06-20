@@ -37,21 +37,43 @@ const VIDEO_MIME = [
 
 export const ALLOWED_MIME = new Set([...DOCUMENT_MIME, ...AUDIO_MIME, ...VIDEO_MIME]);
 
+const TEXT_MIME = 'text/plain';
+const TEXT_EXT = 'txt';
+
+// Plain text has no magic-byte signature, so file-type cannot detect it. Accept it only
+// when the upload is named .txt AND the bytes are valid UTF-8 with no NUL bytes — this stops
+// a binary/executable from being smuggled past sniffing by renaming it .txt.
+function looksLikeUtf8Text(buf: Buffer): boolean {
+  if (buf.includes(0)) return false;
+  try {
+    new TextDecoder('utf-8', { fatal: true }).decode(buf);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const uploadMiddleware = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE },
 }).single('file');
 
-export async function sniffOrThrow(buf: Buffer): Promise<{ mime: string; ext: string }> {
+export async function sniffOrThrow(
+  buf: Buffer,
+  originalName?: string,
+): Promise<{ mime: string; ext: string }> {
   const detected = await fileTypeFromBuffer(buf);
-  if (!detected || !ALLOWED_MIME.has(detected.mime)) {
-    throw new ApiError(
-      415,
-      'UNSUPPORTED_MEDIA_TYPE',
-      'File must be a document (PDF/JPG/PNG), audio, or video file',
-    );
+  if (detected && ALLOWED_MIME.has(detected.mime)) {
+    return { mime: detected.mime, ext: detected.ext };
   }
-  return { mime: detected.mime, ext: detected.ext };
+  if (!detected && originalName?.toLowerCase().endsWith('.txt') && looksLikeUtf8Text(buf)) {
+    return { mime: TEXT_MIME, ext: TEXT_EXT };
+  }
+  throw new ApiError(
+    415,
+    'UNSUPPORTED_MEDIA_TYPE',
+    'File must be a document (PDF/JPG/PNG/TXT), audio, or video file',
+  );
 }
 
 export function multerErrorAsApiError(err: unknown): ApiError | null {

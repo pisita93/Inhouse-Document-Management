@@ -41,4 +41,22 @@ describe('sniffOrThrow', () => {
       status: 415,
     });
   });
+
+  it('accepts a UTF-8 text file named .txt', async () => {
+    const r = await sniffOrThrow(Buffer.from('hello, world\nsecond line'), 'notes.txt');
+    expect(r.mime).toBe('text/plain');
+    expect(r.ext).toBe('txt');
+  });
+
+  it('rejects a .txt-named file whose bytes are binary (NUL bytes)', async () => {
+    await expect(
+      sniffOrThrow(Buffer.from([0x00, 0x01, 0x02, 0xff]), 'evil.txt'),
+    ).rejects.toMatchObject({ status: 415 });
+  });
+
+  it('rejects text content when the file is not named .txt', async () => {
+    await expect(sniffOrThrow(Buffer.from('plain text'), 'foo.bin')).rejects.toMatchObject({
+      status: 415,
+    });
+  });
 });

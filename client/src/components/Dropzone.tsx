@@ -5,6 +5,7 @@ const ALLOWED_EXT = [
   '.jpg',
   '.jpeg',
   '.png',
+  '.txt',
   // audio
   '.mp3',
   '.m4a',
