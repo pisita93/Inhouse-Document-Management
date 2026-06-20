@@ -121,10 +121,20 @@ export function createDocumentsRepo(db: DB) {
       where.push('d.category_id = ?');
       params.push(q.categoryId);
     }
-    if (q.tagId) {
-      fromClause += ' JOIN document_tags dt ON dt.document_id = d.id';
-      where.push('dt.tag_id = ?');
-      params.push(q.tagId);
+    if (q.tagIds && q.tagIds.length > 0) {
+      const placeholders = q.tagIds.map(() => '?').join(',');
+      if (q.tagMatch === 'any') {
+        where.push(
+          `d.id IN (SELECT document_id FROM document_tags WHERE tag_id IN (${placeholders}))`,
+        );
+        params.push(...q.tagIds);
+      } else {
+        where.push(
+          `d.id IN (SELECT document_id FROM document_tags WHERE tag_id IN (${placeholders})` +
+            ` GROUP BY document_id HAVING COUNT(DISTINCT tag_id) = ?)`,
+        );
+        params.push(...q.tagIds, q.tagIds.length);
+      }
     }
     if (q.invoiceDateFrom) {
       where.push('d.invoice_date >= ?');

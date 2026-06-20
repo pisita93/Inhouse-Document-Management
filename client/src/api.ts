@@ -72,7 +72,10 @@ function buildQuery(q: Partial<ListQuery>): string {
   const sp = new URLSearchParams();
   if (q.type) sp.set('type', q.type);
   if (q.categoryId) sp.set('categoryId', q.categoryId);
-  if (q.tagId) sp.set('tagId', q.tagId);
+  if (q.tagIds && q.tagIds.length > 0) {
+    for (const id of q.tagIds) sp.append('tagIds', id);
+  }
+  if (q.tagMatch) sp.set('tagMatch', q.tagMatch);
   if (q.invoiceDateFrom) sp.set('invoiceDateFrom', q.invoiceDateFrom);
   if (q.invoiceDateTo) sp.set('invoiceDateTo', q.invoiceDateTo);
   if (q.uploadDateFrom) sp.set('uploadDateFrom', q.uploadDateFrom);

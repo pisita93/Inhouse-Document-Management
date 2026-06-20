@@ -49,17 +49,31 @@ describe('api', () => {
     expect(url).toContain('uploadDateTo=2026-12-31');
   });
 
-  it('list serializes categoryId and tagId', async () => {
+  it('list serializes categoryId and a single tagId', async () => {
     mockResponses({ status: 200, jsonBody: { items: [], total: 0, page: 1, pageSize: 20 } });
     await api.list({
       categoryId: '11111111-1111-4111-8111-111111111111',
-      tagId: '22222222-2222-4222-8222-222222222222',
+      tagIds: ['22222222-2222-4222-8222-222222222222'],
     });
     const url = String(
       (global.fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0],
     );
     expect(url).toContain('categoryId=11111111-1111-4111-8111-111111111111');
-    expect(url).toContain('tagId=22222222-2222-4222-8222-222222222222');
+    expect(url).toContain('tagIds=22222222-2222-4222-8222-222222222222');
+  });
+
+  it('encodes multiple tagIds and tagMatch in the list query', async () => {
+    mockResponses({ status: 200, jsonBody: { items: [], total: 0, page: 1, pageSize: 20 } });
+    await api.list({
+      tagIds: ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'],
+      tagMatch: 'any',
+    });
+    const url = String(
+      (global.fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0],
+    );
+    expect(url).toContain('tagIds=11111111-1111-4111-8111-111111111111');
+    expect(url).toContain('tagIds=22222222-2222-4222-8222-222222222222');
+    expect(url).toContain('tagMatch=any');
   });
 
   it('retries once on DB_BUSY then resolves', async () => {

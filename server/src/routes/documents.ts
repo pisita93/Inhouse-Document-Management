@@ -127,7 +127,11 @@ export function documentsRouter(deps: Deps): Router {
 
   r.get('/', (req, res, next) => {
     try {
-      const q = ListQuerySchema.parse(req.query);
+      const raw: Record<string, unknown> = { ...req.query };
+      if (raw.tagIds !== undefined && !Array.isArray(raw.tagIds)) {
+        raw.tagIds = [raw.tagIds];
+      }
+      const q = ListQuerySchema.parse(raw);
       res.json(repo.list(q));
     } catch (e) {
       next(e);

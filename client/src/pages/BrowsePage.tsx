@@ -29,7 +29,8 @@ interface FilterValues {
   q: string;
   type: DocumentType | '';
   categoryId: string;
-  tagId: string;
+  tagIds: string[];
+  tagMatch: 'all' | 'any';
   shortNote: string;
   invoiceDateFrom: string;
   invoiceDateTo: string;
@@ -41,7 +42,8 @@ const EMPTY_FILTERS: FilterValues = {
   q: '',
   type: '',
   categoryId: '',
-  tagId: '',
+  tagIds: [],
+  tagMatch: 'all',
   shortNote: '',
   invoiceDateFrom: '',
   invoiceDateTo: '',
@@ -114,20 +116,47 @@ function FilterPanel({
         ))}
       </select>
 
-      <label htmlFor="filter-tag">Tag</label>
+      <label htmlFor="filter-tags">Tags</label>
       <select
-        id="filter-tag"
-        value={draft.tagId}
-        onChange={(e) => update('tagId', e.target.value)}
-        style={{ width: '100%' }}
+        id="filter-tags"
+        multiple
+        value={draft.tagIds}
+        onChange={(e) =>
+          update(
+            'tagIds',
+            Array.from(e.target.selectedOptions, (o) => o.value),
+          )
+        }
+        style={{ width: '100%', minHeight: 96 }}
       >
-        <option value="">All</option>
         {tags.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
           </option>
         ))}
       </select>
+      <small style={{ color: 'var(--fi-ink-soft)' }}>Hold Ctrl/⌘ to select multiple</small>
+      <fieldset style={{ border: 'none', padding: 0, margin: '8px 0 0' }}>
+        <legend style={{ padding: 0, fontSize: 13 }}>Tag match</legend>
+        <label>
+          <input
+            type="radio"
+            name="tagMatch"
+            checked={draft.tagMatch === 'all'}
+            onChange={() => update('tagMatch', 'all')}
+          />{' '}
+          All
+        </label>{' '}
+        <label>
+          <input
+            type="radio"
+            name="tagMatch"
+            checked={draft.tagMatch === 'any'}
+            onChange={() => update('tagMatch', 'any')}
+          />{' '}
+          Any
+        </label>
+      </fieldset>
 
       <label htmlFor="filter-short-note">Short Note</label>
       <input
@@ -216,7 +245,8 @@ export function BrowsePage() {
         q: applied.q || undefined,
         type: applied.type || undefined,
         categoryId: applied.categoryId || undefined,
-        tagId: applied.tagId || undefined,
+        tagIds: applied.tagIds.length ? applied.tagIds : undefined,
+        tagMatch: applied.tagMatch,
         shortNote: applied.shortNote || undefined,
         invoiceDateFrom: applied.invoiceDateFrom || undefined,
         invoiceDateTo: applied.invoiceDateTo || undefined,
