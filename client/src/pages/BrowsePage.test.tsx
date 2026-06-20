@@ -122,6 +122,16 @@ describe('BrowsePage row badges', () => {
     expect(await screen.findByText('Finance')).toBeTruthy();
   });
 
+  it('shows a preview icon for each listed document', async () => {
+    mockApi.list.mockResolvedValue({
+      ...emptyList,
+      items: [doc()],
+      total: 1,
+    });
+    renderPage();
+    expect(await screen.findByLabelText('application/pdf')).toBeTruthy();
+  });
+
   it('renders up to 3 tag chips with a +N more overflow', async () => {
     mockApi.list.mockResolvedValue({
       ...emptyList,

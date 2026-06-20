@@ -114,13 +114,13 @@ describe('GET /api/documents', () => {
     ]);
   });
 
-  it('filters by tagId', async () => {
+  it('filters by tagIds', async () => {
     await uploadOne(env, { documentName: 'F1', tagNames: ['finance'] });
     await uploadOne(env, { documentName: 'F2', tagNames: ['finance'] });
     await uploadOne(env, { documentName: 'H1', tagNames: ['hr'] });
 
     const financeTag = env.tagsRepo.getByName('finance')!;
-    const res = await request(env.app).get(`/api/documents?tagId=${financeTag.id}`);
+    const res = await request(env.app).get(`/api/documents?tagIds=${financeTag.id}`);
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(2);
     expect(res.body.items.map((d: { documentName: string }) => d.documentName).sort()).toEqual([

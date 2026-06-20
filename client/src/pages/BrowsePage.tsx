@@ -4,6 +4,7 @@ import { api, categoriesApi, tagsApi } from '../api.js';
 import { SubBar } from '../components/SubBar.js';
 import { TypeChip } from '../components/TypeChip.js';
 import { FilterDrawer } from '../components/FilterDrawer.js';
+import { Thumbnail } from '../components/Thumbnail.js';
 import {
   DOCUMENT_TYPES,
   type CategoryDTO,
@@ -333,6 +334,7 @@ export function BrowsePage() {
           <table className="fi-table">
             <thead>
               <tr>
+                <th></th>
                 <th>Name</th>
                 <th>Type</th>
                 <th>Short Note</th>
@@ -345,6 +347,9 @@ export function BrowsePage() {
             <tbody>
               {items.map((d) => (
                 <tr key={d.id}>
+                  <td>
+                    <Thumbnail id={d.id} mimeType={d.mimeType} originalName={d.originalName} />
+                  </td>
                   <td>
                     {d.documentName}
                     {d.tags.length > 0 && (
