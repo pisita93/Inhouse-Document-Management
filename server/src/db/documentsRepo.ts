@@ -287,5 +287,11 @@ export function createDocumentsRepo(db: DB) {
     reset(): void {
       db.prepare('DELETE FROM documents').run();
     },
+
+    allIds(): string[] {
+      return (db.prepare('SELECT id FROM documents').all() as Array<{ id: string }>).map(
+        (r) => r.id,
+      );
+    },
   };
 }
