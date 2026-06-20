@@ -1,10 +1,7 @@
 import { api } from '../api.js';
 import type { DocumentDTO } from '../types.js';
+import { PREVIEWABLE_IMAGE_TYPES } from '../lib/mediaTypes.js';
 import './document-preview.css';
-
-// Intentionally narrow allow-list. image/svg+xml is excluded because SVG can carry <script>
-// and inline rendering would execute it under the app's origin.
-const PREVIEWABLE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
 const PLAYABLE_AUDIO_TYPES = new Set([
   'audio/mpeg',

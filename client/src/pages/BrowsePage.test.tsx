@@ -78,12 +78,16 @@ describe('BrowsePage filters', () => {
     renderPage();
     await screen.findAllByRole('option', { name: 'Finance' });
     fireEvent.change(screen.getAllByLabelText('Category')[0]!, { target: { value: CAT_ID } });
-    fireEvent.change(screen.getAllByLabelText('Tag')[0]!, { target: { value: TAG_ID } });
+    const tagSelect = screen.getAllByLabelText('Tags')[0] as HTMLSelectElement;
+    Array.from(tagSelect.options).find((o) => o.value === TAG_ID)!.selected = true;
+    fireEvent.change(tagSelect);
     fireEvent.click(screen.getAllByRole('button', { name: 'Apply' })[0]!);
     await waitFor(() => {
       const calls = mockApi.list.mock.calls;
       const last = calls[calls.length - 1]![0];
-      expect(last).toEqual(expect.objectContaining({ categoryId: CAT_ID, tagId: TAG_ID }));
+      expect(last).toEqual(
+        expect.objectContaining({ categoryId: CAT_ID, tagIds: [TAG_ID], tagMatch: 'all' }),
+      );
     });
   });
 
@@ -96,7 +100,7 @@ describe('BrowsePage filters', () => {
       const calls = mockApi.list.mock.calls;
       const last = calls[calls.length - 1]![0];
       expect(last.categoryId).toBeUndefined();
-      expect(last.tagId).toBeUndefined();
+      expect(last.tagIds).toBeUndefined();
     });
   });
 });
@@ -116,6 +120,16 @@ describe('BrowsePage row badges', () => {
     });
     renderPage();
     expect(await screen.findByText('Finance')).toBeTruthy();
+  });
+
+  it('shows a preview icon for each listed document', async () => {
+    mockApi.list.mockResolvedValue({
+      ...emptyList,
+      items: [doc()],
+      total: 1,
+    });
+    renderPage();
+    expect(await screen.findByLabelText('application/pdf')).toBeTruthy();
   });
 
   it('renders up to 3 tag chips with a +N more overflow', async () => {

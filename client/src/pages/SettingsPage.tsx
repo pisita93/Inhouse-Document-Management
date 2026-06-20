@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { DocumentTypesTab } from './settings/DocumentTypesTab.js';
 import { CategoriesTab } from './settings/CategoriesTab.js';
 import { TagsTab } from './settings/TagsTab.js';
+import { MaintenanceTab } from './settings/MaintenanceTab.js';
 
-type Tab = 'tags' | 'categories' | 'document-types';
+type Tab = 'tags' | 'categories' | 'document-types' | 'maintenance';
 
 export function SettingsPage() {
   const [tab, setTab] = useState<Tab>('document-types');
@@ -32,11 +33,19 @@ export function SettingsPage() {
         <button role="tab" aria-selected={tab === 'tags'} onClick={() => setTab('tags')}>
           Tags
         </button>
+        <button
+          role="tab"
+          aria-selected={tab === 'maintenance'}
+          onClick={() => setTab('maintenance')}
+        >
+          Maintenance
+        </button>
       </nav>
       <section role="tabpanel" className="settings-page__panel">
         {tab === 'document-types' && <DocumentTypesTab />}
         {tab === 'categories' && <CategoriesTab />}
         {tab === 'tags' && <TagsTab />}
+        {tab === 'maintenance' && <MaintenanceTab />}
       </section>
     </div>
   );

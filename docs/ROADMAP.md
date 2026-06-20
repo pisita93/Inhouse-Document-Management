@@ -13,6 +13,10 @@ truth for what has shipped and what is planned. Detailed specs and plans live in
   ([spec](./superpowers/specs/2026-05-19-inhouse-dms-phase2-design.md))
 - **Media upload.** Audio/video formats accepted; upload size limit raised to
   200 MB. ([spec](./superpowers/specs/2026-06-18-media-upload-design.md))
+- **Backlog features.** Multi-tag filtering with AND/OR match, a manual
+  orphan-file sweep (Settings → Maintenance), and browse-list thumbnails.
+  ([spec](./superpowers/specs/2026-06-20-backlog-features-design.md),
+  [plan](./superpowers/plans/2026-06-20-backlog-features.md))
 
 ## Phase 3 — Planned
 
@@ -34,8 +38,4 @@ truth for what has shipped and what is planned. Detailed specs and plans live in
 
 Not yet assigned to a phase.
 
-- **Multi-tag filtering with AND/OR.** Browse currently supports a single tag
-  with exact match.
-- **Orphan-file sweep job.** Periodic cleanup for files left on disk when a
-  delete unlinks the file before the row is gone (rare race; wasted disk only).
-- **Thumbnails / in-browser PDF preview.**
+_All previously-listed backlog items have shipped (see Shipped above)._

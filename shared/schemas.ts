@@ -67,7 +67,8 @@ export type DocumentDTO = z.infer<typeof DocumentDTOSchema>;
 export const ListQuerySchema = z.object({
   type: z.enum(DOCUMENT_TYPES).optional(),
   categoryId: z.string().uuid().optional(),
-  tagId: z.string().uuid().optional(),
+  tagIds: z.array(z.string().uuid()).max(20).optional(),
+  tagMatch: z.enum(['all', 'any']).default('all'),
   invoiceDateFrom: isoDate.optional(),
   invoiceDateTo: isoDate.optional(),
   uploadDateFrom: isoDate.optional(),

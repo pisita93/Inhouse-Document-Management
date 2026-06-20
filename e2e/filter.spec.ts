@@ -32,3 +32,29 @@ test('filter by type and invoice-date range', async ({ page }) => {
   await expect(page.locator('text=Inv-A')).not.toBeVisible();
   await expect(page.locator('text=Rec-A')).not.toBeVisible();
 });
+
+test('filter by multiple tags with AND match', async ({ page }) => {
+  async function uploadTagged(name: string, tags: string[]) {
+    await page.goto('/');
+    await page.setInputFiles('input[type=file]', path.resolve('e2e/fixtures/sample.pdf'));
+    await page.getByLabel('Document Name').fill(name);
+    await page.getByLabel('Type').selectOption('other');
+    for (const t of tags) {
+      await page.getByPlaceholder('Add tag…').fill(t);
+      await page.getByPlaceholder('Add tag…').press('Enter');
+    }
+    await page.getByRole('button', { name: /^Upload$/ }).click();
+    await expect(page.locator('h2', { hasText: name })).toBeVisible();
+  }
+
+  await uploadTagged('Both', ['alpha', 'beta']);
+  await uploadTagged('OnlyAlpha', ['alpha']);
+
+  await page.goto('/browse');
+  await page.getByLabel('Tags').selectOption([{ label: 'alpha' }, { label: 'beta' }]);
+  await page.getByRole('radio', { name: 'All' }).check();
+  await page.getByRole('button', { name: 'Apply' }).first().click();
+
+  await expect(page.locator('text=Both')).toBeVisible();
+  await expect(page.locator('text=OnlyAlpha')).not.toBeVisible();
+});
