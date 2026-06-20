@@ -79,7 +79,10 @@ export function Dropzone({ onFile }: { onFile: (file: File) => void }) {
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.jpg,.jpeg,.png,audio/*,video/*"
+        // List every extension explicitly (plus wildcards for desktop). iOS greys out
+        // audio/video files when accept relies on bare audio/*/video/* wildcards, so the
+        // explicit extensions in ALLOWED_EXT are what keep .m4a/.wav/.mov selectable there.
+        accept={[...ALLOWED_EXT, 'image/*', 'audio/*', 'video/*', 'application/pdf'].join(',')}
         style={{ display: 'none' }}
         onChange={(e) => handleFiles(e.target.files)}
       />

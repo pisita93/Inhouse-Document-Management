@@ -8,6 +8,16 @@ describe('Dropzone', () => {
     expect(screen.getByText(/Drag & drop/i)).toBeTruthy();
   });
 
+  it('lists audio/video extensions explicitly in accept so iOS does not grey them out', () => {
+    const { container } = render(<Dropzone onFile={() => {}} />);
+    const input = container.querySelector('input[type="file"]');
+    const accept = input?.getAttribute('accept') ?? '';
+    // iOS honors explicit extensions, not bare audio/*/video/* wildcards in the Files picker.
+    for (const ext of ['.m4a', '.wav', '.mov', '.aac', '.flac']) {
+      expect(accept).toContain(ext);
+    }
+  });
+
   it('calls onFile when a file is dropped', () => {
     const onFile = vi.fn();
     render(<Dropzone onFile={onFile} />);
