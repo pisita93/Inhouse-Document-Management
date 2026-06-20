@@ -211,3 +211,9 @@ export const documentTypesApi = {
     });
   },
 };
+
+export const maintenanceApi = {
+  sweepOrphans(): Promise<{ scanned: number; removed: number; bytesFreed: number }> {
+    return request('/api/maintenance/orphans/sweep', { method: 'POST' });
+  },
+};
