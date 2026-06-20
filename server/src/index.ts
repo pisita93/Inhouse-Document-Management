@@ -40,6 +40,7 @@ function main(): void {
     categoriesRepo,
     tagsRepo,
     store,
+    fileRoot: cfg.fileRoot,
     staticDir: fs.existsSync(staticDir) ? staticDir : undefined,
     testResetEnabled: process.env.E2E_RESET_ENABLED === '1',
   });

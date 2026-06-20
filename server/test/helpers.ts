@@ -88,6 +88,7 @@ export function makeTestEnv(opts: MakeTestEnvOptions = {}) {
     categoriesRepo,
     tagsRepo,
     store,
+    fileRoot: path.join(tmp, 'file'),
     testResetEnabled: opts.testResetEnabled,
   });
   return {
